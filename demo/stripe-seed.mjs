@@ -3,10 +3,11 @@
 // the Stripe dashboard show realistic usage: a metered price ($4 per verified fix), three demo vendors with test
 // subscriptions, and meter events spread over the last week. Everything is labelled demo and uses Stripe's test card.
 //
-//   demo/live.sh stripe-seed [--events 60]
+//   demo/live.sh stripe-seed [--events 60] [--invoices]
 //
 // Refuses to run unless STRIPE_SECRET_KEY starts with sk_test_ or rk_test_. It cannot create live-mode charges,
-// and demo data is never presented as revenue. Needs `demo/live.sh stripe` to have created the meter first. Safe to re-run.
+// and demo data is never presented as revenue. With --invoices it also bills this run's usage on each demo vendor and
+// pays it with the test card, so Payments and Net volume in the test dashboard show test charges. Needs `demo/live.sh stripe` to have created the meter first. Safe to re-run.
 import { readFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -74,6 +75,7 @@ for (const [name, email, share] of VENDORS) {
 // Meter events over the last 7 days, one per verified fix. Identifiers are unique per run.
 const run = Date.now().toString(36);
 let sent = 0;
+const perCustomer = new Map();
 for (let n = 0; n < EVENTS; n += 1) {
   const r = Math.random();
   let acc = 0;
@@ -84,6 +86,18 @@ for (let n = 0; n < EVENTS; n += 1) {
     'payload[stripe_customer_id]': c.id, 'payload[value]': '1',
   });
   sent += 1;
+  perCustomer.set(c.id, (perCustomer.get(c.id) ?? 0) + 1);
+}
+if (process.argv.includes('--invoices')) {
+  for (const c of customers) {
+    const n = perCustomer.get(c.id) ?? 0;
+    if (n === 0) continue;
+    const inv = await stripe('POST', '/v1/invoices', { customer: c.id, auto_advance: 'false', collection_method: 'charge_automatically', 'metadata[app]': 'agenthelpdesk-demo' });
+    await stripe('POST', '/v1/invoiceitems', { customer: c.id, invoice: inv.id, currency: 'usd', amount: String(n * 400), description: `${n} verified fixes (demo, test mode)` });
+    await stripe('POST', `/v1/invoices/${inv.id}/finalize`, {});
+    const paid = await stripe('POST', `/v1/invoices/${inv.id}/pay`, {});
+    console.log(`invoice: ${c.name} $${(n * 4).toFixed(2)} ${paid.status} (test card)`);
+  }
 }
 console.log(`\nsent ${sent} test meter events (about $${(sent * 4).toFixed(0)} of test-mode usage). Open dashboard.stripe.com/test/billing/meters to see them.`);
 console.log('Test mode only: this is demo data, not revenue.');
