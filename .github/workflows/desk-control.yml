@@ -7,7 +7,7 @@ on:
       action:
         description: What to run
         type: choice
-        options: [wake, deploy, logs, status, diag]
+        options: [wake, deploy, logs, status, diag, free]
         default: wake
 concurrency: desk-control
 jobs:
@@ -35,6 +35,11 @@ jobs:
                     node demo/diag.mjs 2>&1 | sed -E 's/(sk-[A-Za-z0-9_-]{8})[A-Za-z0-9_-]+/\1[redacted]/g' | tee /tmp/desk-logs.txt
                     msg=$(head -c 30000 /tmp/desk-logs.txt | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g')
                     echo "::notice title=desk-logs::$msg" ;;
+            free)   [ -d product/node_modules/@blaxel/core ] || (cd product && npm i --no-save @blaxel/core >/dev/null)
+                    node demo/free-sandboxes.mjs 30 2>&1 | tee /tmp/free.txt
+                    msg=$(head -c 30000 /tmp/free.txt | sed ':a;N;$!ba;s/%/%25/g;s/\r/%0D/g;s/\n/%0A/g'); echo "::notice title=free-log::$msg"
+                    URL=$(grep -o 'https://[a-z0-9]*\.preview\.bl\.run' README.md | head -1)
+                    node demo/wake.mjs "$URL" || { echo "waking in place failed, redeploying"; demo/live.sh deploy; } ;;
             deploy) demo/live.sh deploy ;;
             logs)   [ -d product/node_modules/@blaxel/core ] || (cd product && npm i --no-save @blaxel/core >/dev/null)
                     demo/live.sh logs 2>&1 | sed -E 's/(sk-[A-Za-z0-9_-]{8})[A-Za-z0-9_-]+/\1[redacted]/g' | tee /tmp/desk-logs.txt
