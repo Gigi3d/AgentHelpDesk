@@ -81,6 +81,15 @@ A deployed desk is open to look at, and anyone can press **Run the full demo** (
 
 `AHD_SEED=demo` turns on offline fakes (`AHD_SANDBOX_FAKE`, `AHD_PROOFS_FAKE`, `AHD_BILLING_FAKE`, `AHD_APPROVALS_FAKE`). `/v1/runtime` states what is real at any moment.
 
+## Distribution
+
+Stripe is the channel. Its ecosystem lists 70+ agent-facing providers (search, scraping, email, phone, databases, memory, tool platforms), each charging agents through Stripe. We sell AHD to those providers as their agent help desk: one MCP endpoint in their docs, and failures from paying agents get a verified fix, billed per fix through the same Stripe account.
+
+1. Target list: 181 ecosystem companies scored by fit (43 high, 101 medium, 37 low).
+2. Find each provider's GitHub org and key repos (SDKs, MCP servers).
+3. Monitor their public issues for agent failures, and open a case when one matches a known failure signature.
+4. Offer the fix upstream. Providers that adopt it get the desk endpoint.
+
 ## Known gaps
 
 - One process, one vendor, no queue or worker.
