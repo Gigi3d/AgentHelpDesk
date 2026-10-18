@@ -873,3 +873,11 @@ export interface MemoryResume {
 }
 export const getMemory = () => request<MemoryList>('GET', '/v1/memory');
 export const resumeMemory = (caseId: string) => request<MemoryResume>('POST', '/v1/memory/resume', { case_id: caseId });
+
+// ---- Blaxel view ----
+export interface BlaxelSandbox { name: string; role: 'desk' | 'case' | 'fresh' | 'other'; case_id: string | null; status: string; created_at: string | null; memory_mb: number | null; region: string | null }
+export interface BlaxelSandboxes { real: boolean; limit: number; used: number; sandboxes: BlaxelSandbox[]; note?: string }
+export interface BlaxelActivity { real: boolean; activity: Array<{ at: string; action: string; sandbox: string; case_id: string; ms: number; ok: boolean; error: string | null }> }
+export const getBlaxelSandboxes = () => request<BlaxelSandboxes>('GET', '/v1/blaxel/sandboxes');
+export const deleteBlaxelSandbox = (name: string) => request<{ deleted: string }>('POST', '/v1/blaxel/delete', { name });
+export const getBlaxelActivity = () => request<BlaxelActivity>('GET', '/v1/blaxel/activity');

@@ -137,7 +137,7 @@ export default function Memory() {
     <div className="min-h-screen bg-[#0B1020] text-[#E8ECF6]">
       <header className="mx-auto flex max-w-[860px] flex-wrap items-center justify-between gap-3 px-4 py-4">
         <Link to="/app" className="inline-flex items-center"><Logo dark /></Link>
-        <Link to="/theater" className="text-[13px] text-[#8C97B2] underline underline-offset-4 hover:text-white">Case Theater</Link>
+        <nav className="flex gap-4 text-[13px] text-[#8C97B2]"><Link to="/theater" className="underline underline-offset-4 hover:text-white">Case Theater</Link><Link to="/blaxel" className="underline underline-offset-4 hover:text-white">Blaxel</Link></nav>
       </header>
       <main className="mx-auto max-w-[860px] px-4 pb-20">
         <h1 className="mt-8 text-[30px] font-semibold tracking-tight">Every fix the desk has proven, it keeps</h1>
