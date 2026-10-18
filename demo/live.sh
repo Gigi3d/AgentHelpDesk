@@ -35,6 +35,12 @@ case "${1:-check}" in
     [ -d product/node_modules/@blaxel/core ] || (cd product && npm i --no-save @blaxel/core)
     exec node --experimental-strip-types product/server.ts ;;
   mcp)
+    # After `deploy`, the edge talks to the hosted desk with its token. AHD_MCP_LOCAL=1 keeps the local desk.
+    if [ -f demo/.deploy.json ] && [ "${AHD_MCP_LOCAL:-0}" != "1" ]; then
+      export AHD_DESK_URL="$(node -p "require('./demo/.deploy.json').url")"
+      export AHD_DESK_TOKEN="$(node -p "require('./demo/.deploy.json').token")"
+      echo "MCP edge -> hosted desk $AHD_DESK_URL"
+    fi
     cd mcp && { [ -d node_modules ] || npm install --legacy-peer-deps; }
     exec npx mcp-use dev --tunnel ;;
   run)    exec node demo/run-live.mjs "${@:2}" ;;
