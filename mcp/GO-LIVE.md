@@ -83,3 +83,11 @@ Manufact deployment to it. Never set `AHD_DESK_FAKE=1` on a deployment meant to 
 - The built-in classifier reads "Invalid" in a 401 body as a code bug. The MCP path is not affected (the edge sends
   no response body, so the case classifies as docs, and the run above resolved it), but a direct `POST /v1/cases`
   with the 401 text needs `klass: "knowledge"`.
+
+## Blaxel fork is not enabled on every workspace
+
+On the hackathon workspace, `sandbox.fork` returns `403 FORK_FAILED: Sandbox snapshot/fork feature is not
+enabled`. The desk now falls back to a clean sandbox with the `/ahd` files copied in (same files, no
+processes), so the fresh-agent proof still runs in isolation. Set `AHD_FORK_FALLBACK=0` to turn the
+fallback off, for example once Blaxel enables forking and you want the real fork. Ask Blaxel to enable
+snapshot/fork for the workspace if you want it.

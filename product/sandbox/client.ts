@@ -299,6 +299,36 @@ export async function blxSnapshot(_sb: BlaxelSandboxLike, name: string): Promise
 
 const sleepMs = (ms: number): Promise<void> => new Promise((resolve) => { setTimeout(resolve, ms); });
 
+
+/** True when Blaxel refused the fork because the feature is off for this workspace. */
+export function isForkUnavailable(message: string): boolean {
+  return /fork.*not enabled|snapshot\/fork feature|FORK_FAILED.*403|403.*fork/i.test(message);
+}
+
+/**
+ * Fallback for workspaces without fork: create a clean sandbox and copy the /ahd tree across as one
+ * tarball. Same files, no processes, no shell history: what the fresh-agent proof needs.
+ */
+async function copyIntoFreshSandbox(source: BlaxelSandboxLike, sourceName: string, newName: string): Promise<BlaxelSandboxLike> {
+  const tarPath = '/tmp/ahd-copy.tgz';
+  const packed = await blxExec(source, `cd / && tar -czf ${tarPath} ahd`, { timeout_ms: 55_000 });
+  if (packed.exit_code !== 0) throw new Error(`sandbox.fork: copy fallback could not pack /ahd in '${sourceName}' (exit ${packed.exit_code})`);
+  const srcFs = asRecord((source as unknown as Record<string, unknown>)['fs']);
+  const readBinary = srcFs?.['readBinary'];
+  if (typeof readBinary !== 'function') throw new Error('sandbox.fork: copy fallback needs sandbox.fs.readBinary, which the installed SDK lacks');
+  const blob = (await readBinary.call(srcFs, tarPath)) as { arrayBuffer?: () => Promise<ArrayBuffer> };
+  if (typeof blob?.arrayBuffer !== 'function') throw new Error('sandbox.fork: copy fallback read an unrecognised shape from fs.readBinary');
+  const bytes = Buffer.from(await blob.arrayBuffer());
+  const copy = await blxCreateIfNotExists(newName);
+  const dstFs = asRecord((copy as unknown as Record<string, unknown>)['fs']);
+  const writeBinary = dstFs?.['writeBinary'];
+  if (typeof writeBinary !== 'function') throw new Error('sandbox.fork: copy fallback needs sandbox.fs.writeBinary, which the installed SDK lacks');
+  await writeBinary.call(dstFs, tarPath, bytes);
+  const unpacked = await blxExec(copy, `cd / && tar -xzf ${tarPath} && rm -f ${tarPath}`, { timeout_ms: 55_000 });
+  if (unpacked.exit_code !== 0) throw new Error(`sandbox.fork: copy fallback could not unpack /ahd in '${newName}' (exit ${unpacked.exit_code})`);
+  return copy;
+}
+
 /**
  * Fork per the documented `const result = await sandbox.fork("copy")`. The docs do not say
  * what `result` holds or whether the copy is ready when the call returns, so the fork is
@@ -317,6 +347,12 @@ export async function blxFork(snapshotId: string, newName: string): Promise<Blax
   try {
     await source.fork.call(source, newName);
   } catch (err) {
+    // Some workspaces do not have the snapshot/fork feature (HTTP 403 FORK_FAILED). The fresh-agent
+    // proof only needs a clean sandbox holding the same /ahd files, so copy them instead.
+    if (isForkUnavailable(messageOf(err)) && process.env.AHD_FORK_FALLBACK !== '0') {
+      process.stderr.write(`sandbox.fork: not enabled for this workspace; copying /ahd from '${sourceName}' into a clean sandbox '${newName}'\n`);
+      return copyIntoFreshSandbox(source, sourceName, newName);
+    }
     throw new Error(`sandbox.fork: fork of '${sourceName}' to '${newName}' failed: ${messageOf(err)}`);
   }
   const deadline = Date.now() + Number(process.env.AHD_FORK_READY_MS ?? 60_000);

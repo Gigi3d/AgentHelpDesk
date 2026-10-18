@@ -9,3 +9,10 @@ test('messageOf: plain API error objects do not print as [object Object]', async
   assert.match(messageOf({ foo: 1 }), /foo/);
   assert.equal(messageOf(undefined), 'undefined');
 });
+
+test('isForkUnavailable recognises the 403 the workspace returns', async () => {
+  const { isForkUnavailable } = await import('./client.ts');
+  assert.equal(isForkUnavailable('Error 403: Sandbox snapshot/fork feature is not enabled for this workspace'), true);
+  assert.equal(isForkUnavailable('quota exceeded'), false);
+  assert.equal(isForkUnavailable('Unauthorized (401)'), false);
+});
