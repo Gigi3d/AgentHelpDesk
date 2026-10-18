@@ -39,6 +39,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="/" element={<Landing />} />
             <Route path="/install" element={<Install />} />
             <Route path="/agents" element={<AgentSurfaces />} />
+            <Route path="/unlock" element={<Gate forceLocked />} />
             <Route element={<Gate />}>
             <Route path="/theater" element={<Navigate to="/app/theater" replace />} />
             <Route path="/theater/:id" element={<OldTheater />} />

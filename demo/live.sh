@@ -58,6 +58,7 @@ case "${1:-check}" in
   approve) exec node demo/approve.mjs "${2:-}" ;;
   logs) exec node demo/desk-logs.mjs ;;
   stripe) exec node demo/stripe-setup.mjs ;;
+  stripe-seed) exec node demo/stripe-seed.mjs "${@:2}" ;;
   inkbox) exec node demo/inkbox-setup.mjs ;;
   cli) shift; exec node cli/ahd.mjs "$@" ;;
   armature) exec node demo/armature-pull.mjs ;;
@@ -70,5 +71,5 @@ case "${1:-check}" in
     exec node demo/cleanup-sandboxes.mjs "${@:2}" ;;
   persist)
     exec node demo/persist-check.mjs "${@:2}" ;;
-  *) echo "usage: demo/live.sh persist [record|verify|restart|standby|wipe]|cleanup|check|server|mcp|run|deploy|remote|stripe|inkbox|armature|scenarios|cli|approve|logs"; exit 2 ;;
+  *) echo "usage: demo/live.sh persist [record|verify|restart|standby|wipe]|cleanup|check|server|mcp|run|deploy|remote|stripe|stripe-seed|inkbox|armature|scenarios|cli|approve|logs"; exit 2 ;;
 esac

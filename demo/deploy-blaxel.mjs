@@ -164,6 +164,8 @@ lines.push(
   `AHD_RESOLVER=claude`, `AHD_PROVISION_DIR=/app/demo/sandbox-root`, `AHD_SCENARIOS_DIR=/app/demo/scenarios`, `AHD_FRESH_BASELINE=1`,
   `AHD_REPRO_COMMAND='node /ahd/replay.mjs'`, `AHD_REPRO_EXPECT=nonzero`,
   `AHD_VENDOR_JSON=${JSON.stringify(JSON.stringify(vendor))}`,
+  // Public by default so judges can look and press Run; writes still need the key. AHD_PRIVATE=1 turns it off.
+  ...(env.AHD_PRIVATE === '1' ? [] : [`AHD_PUBLIC_READ=1`, `AHD_PUBLIC_DEMO=1`, `AHD_PUBLIC_MAX_PER_HOUR=${env.AHD_PUBLIC_MAX_PER_HOUR || 8}`, `AHD_BLAXEL_STANDBY_LIMIT=${env.AHD_BLAXEL_STANDBY_LIMIT || 10}`]),
 );
 await sb.fs.write('/app/ahd.env', `${lines.join('\n')}\n`);
 await sh('rm -f /app/.env && chmod 600 /app/ahd.env');

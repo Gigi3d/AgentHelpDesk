@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bearerOk } from './http-auth.ts';
+import { bearerOk, openWithoutToken } from './http-auth.ts';
 
 test('no token configured: open', () => {
   assert.equal(bearerOk(undefined, undefined), true);
@@ -13,4 +13,15 @@ test('token configured: needs the exact bearer', () => {
   assert.equal(bearerOk('Basic s3cret', 's3cret'), false);
   assert.equal(bearerOk('Bearer s3cret', 's3cret'), true);
   assert.equal(bearerOk('bearer s3cret', 's3cret'), true);
+});
+
+test('public mode opens reads and the demo door, never other writes', () => {
+  const on = { AHD_PUBLIC_READ: '1', AHD_PUBLIC_DEMO: '1' } as NodeJS.ProcessEnv;
+  assert.equal(openWithoutToken('GET', '/v1/cases', on), true);
+  assert.equal(openWithoutToken('POST', '/v1/public/demo/run', on), true);
+  assert.equal(openWithoutToken('POST', '/v1/blaxel/delete', on), false);
+  assert.equal(openWithoutToken('POST', '/v1/approvals/reply', on), false);
+  assert.equal(openWithoutToken('POST', '/v1/cases', on), false);
+  assert.equal(openWithoutToken('GET', '/v1/cases', {} as NodeJS.ProcessEnv), false);
+  assert.equal(openWithoutToken('POST', '/v1/public/demo/run', { AHD_PUBLIC_READ: '1' } as NodeJS.ProcessEnv), false);
 });

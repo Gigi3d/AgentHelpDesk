@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getScenarios, runScenarios, type Scenario, type ScenarioRun } from '../lib/api';
+import { getPublicDemo, getScenarios, getToken, runPublicDemo, runScenarios, type PublicDemo, type Scenario, type ScenarioRun } from '../lib/api';
 import { Button, Chip, StageChip } from '../components/ui';
 import { cx } from '../components/ui';
 import { TILE } from '../lib/sandboxKinds';
@@ -83,10 +83,12 @@ export default function Scenarios() {
   const [data, setData] = useState<Scenario[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pub, setPub] = useState<PublicDemo | null>(null);
 
   const load = useCallback(async () => {
     try {
       setData((await getScenarios()).scenarios);
+      setPub(await getPublicDemo().catch(() => null));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     }
@@ -110,6 +112,23 @@ export default function Scenarios() {
     }
   };
 
+  const fullDemo = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      await runPublicDemo();
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const phase = pub?.run?.phase;
+  const running = phase === 'alpha' || phase === 'beta';
+  const phaseText = running ? (phase === 'alpha' ? 'Agent alpha is reporting four failures.' : 'Agent beta hits the same failures. Watch for memory hits.') : phase === 'done' ? 'Done. Nobody approved anything.' : phase === 'failed' ? (pub?.run?.note ?? 'The run failed.') : pub && !pub.can_run && pub.why ? `${pub.why}${pub.wait_s ? ` ${pub.wait_s}s.` : ''}` : null;
+  const admin = getToken() !== '';
+
   const runs = (data ?? []).flatMap((s) => s.runs);
   const count = (f: (r: ScenarioRun) => boolean) => runs.filter(f).length;
   const stats: Array<[string, number, string]> = [
@@ -125,12 +144,16 @@ export default function Scenarios() {
         <div className="max-w-[64ch]">
           <h1 className="text-title font-semibold text-ink">x402 scenarios</h1>
           <p className="mt-2 text-body text-muted">
-            Simulated paid-call failures on Ledgerly. Nothing is charged. Each one runs with no human: reproduce, fix, three proofs, ship. Run it again as a second agent to see the desk reuse the fix.
+            Simulated paid-call failures on Ledgerly. Nothing is charged. Run the full demo: four failures with no human step, then a second agent hits the same four and the desk reuses its fixes.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="primary" onClick={() => void run('alpha')} disabled={busy}>{busy ? 'Starting' : 'Run 4 as agent alpha'}</Button>
-          <Button onClick={() => void run('beta')} disabled={busy}>Run again as agent beta</Button>
+        <div className="flex flex-col items-end gap-2">
+          <div className="flex gap-2">
+            {pub && <Button variant="primary" onClick={() => void fullDemo()} disabled={busy || running || !pub.can_run}>{running ? 'Running' : 'Run the full demo'}</Button>}
+            {admin && <Button onClick={() => void run('alpha')} disabled={busy}>Run 4 as alpha</Button>}
+            {admin && <Button onClick={() => void run('beta')} disabled={busy}>Run again as beta</Button>}
+          </div>
+          {phaseText && <p className="text-[13px] text-muted" aria-live="polite">{phaseText}</p>}
         </div>
       </header>
       {error && <p role="alert" className="mb-4 text-[14px] text-error-text">{error}</p>}
