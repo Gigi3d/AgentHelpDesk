@@ -2,25 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { deleteBlaxelSandbox, getBlaxelActivity, getBlaxelSandboxes, getMemory, listCases, resumeMemory, type BlaxelActivity, type BlaxelSandbox, type BlaxelSandboxes, type MemoryResume } from '../lib/api';
 import { cx } from '../components/ui';
+import { TILE, WORD, kindFor, type SandboxKind } from '../lib/sandboxKinds';
 
-type Kind = 'desk' | 'remembered' | 'closed' | 'escalated' | 'working' | 'other';
+type Kind = SandboxKind;
 
-const TILE: Record<Kind, string> = {
-  desk: 'bg-blue border-blue',
-  remembered: 'bg-success border-success',
-  closed: 'bg-success/35 border-success/60',
-  escalated: 'bg-error border-error',
-  working: 'bg-warning border-warning animate-pulse',
-  other: 'bg-line border-line',
-};
-const WORD: Record<Kind, string> = {
-  desk: 'the desk',
-  remembered: 'holds a remembered fix',
-  closed: 'finished case',
-  escalated: 'escalated case',
-  working: 'case in progress',
-  other: 'not in this desk\u2019s records',
-};
 const ACTION: Record<string, string> = { create_or_resume: 'Woke or created', fork: 'Cloned', destroy: 'Deleted', exec: 'Ran a command' };
 
 const ago = (iso: string | null) => {
@@ -56,16 +41,7 @@ export default function Blaxel() {
     return () => window.clearInterval(t);
   }, [load]);
 
-  const kindOf = useCallback((s: BlaxelSandbox): Kind => {
-    if (s.role === 'desk') return 'desk';
-    if (s.role === 'fresh') return 'working';
-    if (s.case_id && remembered.has(s.case_id)) return 'remembered';
-    const st = s.case_id ? status[s.case_id] : undefined;
-    if (st === 'escalated') return 'escalated';
-    if (st === 'closed' || st === 'resolved' || st === 'shipped') return 'closed';
-    if (st) return 'working';
-    return 'other';
-  }, [remembered, status]);
+  const kindOf = useCallback((s: BlaxelSandbox): Kind => kindFor(s, status, remembered), [remembered, status]);
 
   const slots = useMemo(() => {
     const list = sb?.sandboxes ?? [];
@@ -109,7 +85,7 @@ export default function Blaxel() {
             <div className="mt-4 grid gap-2" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(44px, 1fr))' }}>
               {slots.map((s, i) => (
                 <div key={s?.name ?? `empty-${i}`} title={s ? `${s.name}\n${WORD[kindOf(s)]}` : 'free slot'}
-                  className={cx('h-11 rounded-lg border', s ? TILE[kindOf(s)] : 'border-dashed border-line')} />
+                  className={cx('h-11 rounded-lg border', s ? `${TILE[kindOf(s)]} animate-wake` : 'border-dashed border-line')} style={s ? { animationDelay: `${i * 70}ms` } : undefined} />
               ))}
             </div>
             <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-muted">

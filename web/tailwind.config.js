@@ -31,9 +31,11 @@ export default {
       boxShadow: { pop: '0 8px 28px rgba(17,24,39,.12), 0 1px 3px rgba(17,24,39,.08)' },
       keyframes: {
         pulsering: { '0%': { boxShadow: '0 0 0 0 rgba(37,84,245,.45)' }, '100%': { boxShadow: '0 0 0 10px rgba(37,84,245,0)' } },
+        wake: { '0%': { opacity: '0', transform: 'scale(.55)' }, '60%': { opacity: '1', transform: 'scale(1.12)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
+        flow: { '0%': { backgroundPosition: '0 0' }, '100%': { backgroundPosition: '16px 0' } },
         fadein: { from: { opacity: '0', transform: 'translateY(2px)' }, to: { opacity: '1', transform: 'none' } },
       },
-      animation: { pulsering: 'pulsering 1.4s ease-out infinite', fadein: 'fadein 140ms ease-out' },
+      animation: { pulsering: 'pulsering 1.4s ease-out infinite', fadein: 'fadein 140ms ease-out', wake: 'wake 420ms cubic-bezier(.2,.8,.2,1) both', flow: 'flow .7s linear infinite' },
     },
   },
   plugins: [],

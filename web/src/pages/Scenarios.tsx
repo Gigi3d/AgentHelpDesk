@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { getScenarios, runScenarios, type Scenario, type ScenarioRun } from '../lib/api';
 import { Button, Chip, StageChip } from '../components/ui';
 import { cx } from '../components/ui';
+import { TILE } from '../lib/sandboxKinds';
 
 const WORKING = new Set(['opened', 'reproducing', 'fix_drafted', 'proving']);
 const DONE = new Set(['shipped', 'answered', 'closed']);
@@ -25,7 +26,7 @@ function Lane({ run }: { run: ScenarioRun | undefined }) {
         <li key={label} className="flex items-center gap-1.5">
           <span className={cx('h-2.5 w-2.5 rounded-full', tone[s])} />
           <span className={cx('text-[12px]', s === 'idle' ? 'text-muted' : 'text-ink')}>{label}</span>
-          {i < hops.length - 1 && <span className="mx-0.5 h-px w-4 bg-line" />}
+          {i < hops.length - 1 && <span className={cx('mx-0.5 h-0.5 w-4 rounded', working && i === 1 ? 'animate-flow bg-[length:8px_2px] bg-[linear-gradient(90deg,#2554F5_50%,transparent_50%)]' : 'bg-line')} />}
         </li>
       ))}
     </ol>
@@ -59,6 +60,10 @@ function Card({ s }: { s: Scenario }) {
           {s.runs.slice(0, 4).map((r) => (
             <li key={r.case_id} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2 text-[13px]">
               <span className="w-14 font-medium text-ink">{r.agent}</span>
+              <Link to="/app/blaxel" title={`${r.sandbox} in Blaxel`} className="inline-flex items-center gap-1.5 font-mono text-[11.5px] text-muted hover:text-ink">
+                <i className={cx('h-3 w-3 rounded-[3px] border animate-wake', TILE[WORKING.has(r.status) ? 'working' : r.status === 'escalated' ? 'escalated' : r.memory_hit || DONE.has(r.status) ? 'closed' : 'other'])} />
+                {r.sandbox.replace('ahd-c-', '').slice(0, 8)}
+              </Link>
               <StageChip stage={r.status} />
               {r.memory_hit ? <Chip tone="green">memory hit, no model call</Chip> : <Chip tone="blue">fresh draft</Chip>}
               <Proofs p={r.proofs} />

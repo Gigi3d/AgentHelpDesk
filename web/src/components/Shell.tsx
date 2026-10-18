@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { agents, HERO_ID, useStore } from '../lib/store';
 import { Kbd, StageChip, cx } from './ui';
+import { SandboxRail } from './SandboxRail';
 
 export function Logo({ dark }: { dark?: boolean }) {
   return (
@@ -93,6 +94,7 @@ function Sidebar({ onNav }: { onNav?: () => void }) {
         <Item to="/app/billing" icon={Icon.billing}>Billing</Item>
         <Item to="/app/settings" icon={Icon.settings}>Settings</Item>
       </div>
+      <SandboxRail />
       <div className="flex flex-col gap-0.5">
         <div className="mb-1 px-2.5 text-label font-medium uppercase text-muted">Under the hood</div>
         <Item to="/app/scenarios" icon={Icon.scenarios}>x402 scenarios</Item>
@@ -298,6 +300,7 @@ export function AppShell() {
   useGlobalKeys(setDialog);
   const { tickets, replay, live } = useStore();
   const hero = tickets.find((t) => t.id === HERO_ID);
+  const loc = useLocation();
   return (
     <div className="min-h-screen bg-white">
       <TestModeBanner />
@@ -327,7 +330,7 @@ export function AppShell() {
             </div>
           </header>
           <main className="mx-auto w-full max-w-[1120px] px-4 py-8 md:px-6">
-            {live.on && live.state !== 'open' && !tickets.length ? <LiveGate /> : <Outlet />}
+            {live.on && live.state !== 'open' && !tickets.length ? <LiveGate /> : <div key={loc.pathname} className="animate-fadein"><Outlet /></div>}
           </main>
           <footer className="mx-auto max-w-[1120px] px-6 pb-8 text-[12px] text-muted">
             Live-on-screen data reads from <span className="font-mono">tool_events</span>. Waiting {tickets.filter((t) => t.stage === 'awaiting_approval').length} · Press <Kbd>?</Kbd> for shortcuts.
