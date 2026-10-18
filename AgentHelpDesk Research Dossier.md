@@ -122,7 +122,7 @@ I found no company selling a live support desk for agent customers. The space is
 | [AWS AgentCore](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/release-notes.html) | Gateway, Identity, Observability, Evaluations, Registry, Payments | Traces and evals of agent failures inside AWS | Does not answer agents or tell tool publishers what to fix | Medium; partner or acquirer |
 | [Alhena](https://alhena.ai/blog/agentic-traffic-customer-support/) | Order management agent for ecommerce; publishes research on agent traffic | Ecommerce segment | Not aimed at API and developer-tool vendors | Low to medium |
 | [Sapiom](https://siliconangle.com/2026/02/06/sapiom-reels-15-75m-equip-ai-agents-payment-features/) | Agent spend controls and know-your-agent checks; about $50M raised per a [listing](https://www.trysignalbase.com/news/funding/sapiom-raises-350m-series-a-for-ai-agent-payments) | Agent identity and trust | Buyer-side payments, not support | Low |
-| [Inkbox](https://www.ycombinator.com/companies/inkbox), [Primitive](https://primitive.dev) (hackathon sponsors) | Agent inboxes, phone, identity | The inbound channel AgentHelpDesk would use | Infrastructure, not a support product | Low as competitors; useful as suppliers |
+| [Inkbox](https://www.ycombinator.com/companies/inkbox) (hackathon sponsor) | Agent inboxes, phone, identity | The inbound channel AgentHelpDesk would use | Infrastructure, not a support product | Low as competitors; useful as suppliers |
 | In-house build | A vendor wires an LLM to its own docs and support inbox | The default alternative | Needs a test matrix, cross-vendor data and ongoing upkeep | High for large vendors, low for the long tail |
 
 Likely entrants over the next year: a helpdesk shipping an agent mode, an observability vendor extending traces into replies, and a cloud platform bundling a tool-publisher support service. Armature adding live replies is the nearest threat among startups.
@@ -191,7 +191,7 @@ An agent's failure enters through one of three doors, passes four checks inside 
 
 ### Build list
 
-1. **Intake.** An agent-facing inbox on Primitive or Inkbox, a `report_problem` MCP tool deployed on Manufact, and a support link a vendor adds to its error responses.
+1. **Intake.** An agent-facing inbox on Inkbox, a `report_problem` MCP tool deployed on Manufact, and a support link a vendor adds to its error responses.
 2. **Verify.** Check `sender_verified` on the inbound message, check a Web Bot Auth signature when present, and rate-limit per agent so one agent cannot flood the queue.
 3. **Diagnose.** Index the vendor's OpenAPI spec, docs and changelog, optionally read error logs, and map the report to a failure taxonomy.
 4. **Draft.** Reply in a structured format modeled on RFC 9457 problem details, the same format Cloudflare now uses for agent errors.
@@ -275,7 +275,6 @@ The hackathon runs Oct 17-18 at YC's San Francisco HQ with about 200 builders, h
 
 | Sponsor | Job in AgentHelpDesk | Real or logo | Why it helps |
 | --- | --- | --- | --- |
-| Primitive | Agent-facing inbox with verified senders | Real | Gives the verify step a genuine signal |
 | Inkbox | Agent identity and human escalation by text or call | Real | Host; wants agent identity used |
 | Manufact | `report_problem` MCP tool deployed on Manufact Cloud | Real | Fits the MCP server prize track |
 | Blaxel | Sandbox that tests every fix before it is sent | Real | The verification step is the product's edge |
@@ -293,7 +292,7 @@ The hackathon runs Oct 17-18 at YC's San Francisco HQ with about 200 builders, h
 
 ### Weekend timeline
 
-1. **Before Saturday.** Create accounts and request access (Primitive, Inkbox, Manufact, Blaxel, Stripe). Build the sample vendor API with three failure modes. Write the failure taxonomy and the reply format.
+1. **Before Saturday.** Create accounts and request access (Inkbox, Manufact, Blaxel, Stripe). Build the sample vendor API with three failure modes. Write the failure taxonomy and the reply format.
 2. **Saturday morning.** Intake (inbox and MCP tool) and the diagnose step on the sample vendor.
 3. **Saturday afternoon.** Draft and sandbox test; get one failure working end to end.
 4. **Saturday night.** Failure store, fixes feed and dashboard. Add the second and third failure modes.
@@ -310,7 +309,7 @@ The first goal is ten vendors who send real agent failures, not ten paying custo
 
 | Source | Who | Why they say yes | Evidence they fit |
 | --- | --- | --- | --- |
-| Hackathon sponsors | Blaxel, Primitive, Inkbox, Manufact, Armature, Stripe | They sell to agents and several are asking for design partners | [Inkbox](https://www.ycombinator.com/companies/inkbox) asks for design partners on its YC page |
+| Hackathon sponsors | Blaxel, Inkbox, Manufact, Armature, Stripe | They sell to agents and several are asking for design partners | [Inkbox](https://www.ycombinator.com/companies/inkbox) asks for design partners on its YC page |
 | YC companies selling developer products | Spring and Summer 2026 batches and earlier | Warm access, same incentives, agent traffic arriving now | Several sponsors are themselves YC companies |
 | MCP and tool publishers | Active servers with public repos | They see agent errors and have no channel to answer them | About 9,652 latest-version records in the official registry (May 2026, [secondary source](https://digitalapplied.com/blog/mcp-adoption-statistics-2026)) |
 | Platform contact | The AWS agentic AI lead you know | Introductions to tool publishers in AgentCore Registry and Gateway | AgentCore has [Registry, Gateway, Observability and Evaluations](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/release-notes.html) |
@@ -344,7 +343,7 @@ Treat it as discovery, not a pitch. Ask what the top reasons are for AgentCore c
 | It is a feature | A helpdesk or Cloudflare adds an agent mode | Move fast on cross-vendor data and helpdesk-neutral integrations | A major helpdesk ships agent-facing support to general availability before you have ten live vendors |
 | Wrong answers | A bad fix sent to an agent damages the vendor's trust | Sandbox test before sending, escalate when unsure, no charge on escalation | Verified replies fail on real traffic more than the vendor will tolerate |
 | Data rights | Vendors may refuse to share logs | Contract language on anonymized learning; start with failures the agent itself reports | Pilots will not agree to any learning on anonymized data |
-| Neutrality conflict | Armature, Inkbox and Primitive are sponsors and adjacent | Partner openly; use them as suppliers and design partners | A sponsor asks to be exclusive or builds the same feature |
+| Neutrality conflict | Armature and Inkbox are sponsors and adjacent | Partner openly; use them as suppliers and design partners | A sponsor asks to be exclusive or builds the same feature |
 | Dollar value unproven | The unit economics rely on assumptions | Replace every assumption with a design partner's real logs | Recovered revenue is more than ten times lower than the illustrative case |
 | Security | An open inbox for agents invites prompt injection | Treat every inbound message as untrusted input; verify senders; rate-limit | A successful injection that changes a reply or leaks vendor data |
 | Envelope abuse | Delegating refunds and reissues to agents opens a fraud and double-spend surface | Caps per agent and per user, idempotency keys, a receipt for every grant, and an audit log the vendor can read | A grant used beyond its cap, or a replayed call that spends twice |
@@ -376,7 +375,7 @@ All pages below were opened on Oct 14, 2026. Pages marked as vendor-written or s
 **Event and sponsors**
 
 - [YC event page](https://events.ycombinator.com/MakeSomethingAgentsWant) (only the theme loaded), [TipRanks on Manufact](https://www.tipranks.com/news/private-companies/manufact-deepens-ai-agent-ecosystem-engagement-with-yc-hackathon)
-- [Inkbox](https://www.ycombinator.com/companies/inkbox), [Primitive](https://ycombinator.com/companies/primitive), [Armature](https://ycombinator.com/companies/armature), [Blaxel](https://ycombinator.com/companies/blaxel) on YC; [armature.tech](https://armature.tech), [primitive.dev](https://primitive.dev), [inkbox.ai](https://inkbox.ai)
+- [Inkbox](https://www.ycombinator.com/companies/inkbox), [Armature](https://ycombinator.com/companies/armature), [Blaxel](https://ycombinator.com/companies/blaxel) on YC; [armature.tech](https://armature.tech), [inkbox.ai](https://inkbox.ai)
 
 **Primary evidence (captured Oct 16, 2026)**
 

@@ -112,7 +112,7 @@ product/    the desk. Node, TypeScript, zero runtime dependencies
   proofs/     the three-proof runner
   approvals/  the one-reply approval channel, and the reports
   billing/    Stripe metering, x402, mpp, pricing, invoice preview
-  email/      the Primitive email client and thread handling
+  email/      email thread handling (fixture lane only)
   evals/      the Armature install eval
   server.ts   wires the modules together. they never import each other
   demo-seed.ts  opt-in demo data, and the four offline fakes
@@ -170,7 +170,7 @@ This is the part worth reading before you trust anything above.
 Two more are fake regardless of the seed:
 
 - x402 payment verification is a deterministic offline stub. No facilitator is ever called.
-- Email falls back to a fake client whenever `PRIMITIVE_KEY` is unset.
+- The email lane runs on fixtures only; there is no email sponsor key.
 
 What is genuinely real and exercised end to end: intake and classification, the case state machine, the approval gate, secret redaction, idempotency, the billing decision rule, user data erasure, the reports, and the console against the live API. The reports contain no language model. Every number is counted out of the store, every sentence is those numbers written out, and each report carries its own list of assumptions.
 

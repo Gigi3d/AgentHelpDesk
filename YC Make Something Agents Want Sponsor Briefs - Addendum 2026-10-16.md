@@ -15,8 +15,6 @@ The sponsor necessity test in the Build Plan still holds: a sponsor earns its pl
 
 **Inkbox (approval gate, reports).** The approval text for an envelope grant must state the cap and the per-user limit in the first line, because a human is approving a spend limit, not a diff. Add `case.breached_sla` to the alerts Inkbox carries: a missed deadline is the one event that should page the provider.
 
-**Primitive (fallback intake).** Unchanged. Note that the Hark transcript's worst moment — an agent telling a user to email support to delete their own account — is exactly the failure mode Primitive's verified-sender email lane exists to catch, so keep it in the demo as the "before" state.
-
 **Armature (partner, not dependency).** Its evals are the natural third-party check on the grant path: does a fresh agent use the envelope correctly and stop at the cap? That is a concrete partner ask for the event, and it converts the closest startup competitor into a reviewer.
 
 **Stripe (billing).** Unchanged rule: one meter event per billable outcome, billable = all three proofs true and the agent's retry succeeded. Grants are not separately billable. The MPP lane remains optional and cut-first.
