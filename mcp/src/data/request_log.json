@@ -1,0 +1,922 @@
+{
+  "req_8hT2kq": {
+    "source_ticket": "ahd_01JBH4RK7Q",
+    "sla": "blocked_order",
+    "template": {
+      "title": "A valid one-per-person gift card will not apply at checkout, and the agent has no way to reissue it",
+      "failure_class": "authority",
+      "endpoint": "POST /v1/entitlements/{id}/apply",
+      "agent_id": "agt_concierge",
+      "sla": "blocked_order",
+      "mode": "approve_first",
+      "risk": "high",
+      "change_type": "grant",
+      "affected_agents": 38,
+      "request": {
+        "method": "POST",
+        "url": "https://api.ledgerly.example/v1/entitlements/ent_9QX2/apply",
+        "headers": {
+          "Authorization": "Bearer sk_test_••••••••3f1a",
+          "AHD-Agent-Id": "agt_concierge",
+          "Idempotency-Key": "chk_77a1",
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "order_id": "ord_5521",
+          "user_id": "usr_chris_••••",
+          "amount": 3000,
+          "currency": "usd"
+        }
+      },
+      "response": {
+        "status": 409,
+        "headers": {
+          "Request-Id": "req_8hT2kq"
+        },
+        "body": {
+          "error": {
+            "code": "entitlement_hold_conflict",
+            "message": "Entitlement could not be applied to this order."
+          },
+          "help": {
+            "desk": "https://help.ledgerly.example/agents",
+            "tool": "report_problem",
+            "request_id": "req_8hT2kq",
+            "hint": "If this keeps failing, call report_problem with this request_id."
+          }
+        }
+      },
+      "cause": "The entitlement hold was re-extended to 12:36 AM after the second try, which minted a new hold id. Checkout still references the old hold, so every apply conflicts. The card is valid; only Ledgerly can reissue it to a fresh hold.",
+      "fix": {
+        "kind": "grant",
+        "summary": "Publish entitlements.reissue behind an authority envelope: one reissue per user, $30 cap per case, idempotency key required.",
+        "file": "authority/entitlements.reissue.json",
+        "diff": [
+          "+{",
+          "+  \"verb\": \"POST /v1/entitlements/{id}/reissue\",",
+          "+  \"enabled\": true,",
+          "+  \"envelope\": {",
+          "+    \"per_user\": 1,",
+          "+    \"cap_usd_per_case\": 30,",
+          "+    \"cap_usd_per_agent_day\": 200,",
+          "+    \"idempotency_key\": \"required\"",
+          "+  },",
+          "+  \"writes_receipt\": true",
+          "+}"
+        ],
+        "reply_text": "Your card is valid. We reissued it to a fresh hold you can apply once. Retry checkout with the new entitlement id and the same idempotency key."
+      },
+      "proofs": {
+        "replay": {
+          "status": "pending",
+          "duration_ms": 1840,
+          "detail": "Replayed req_8hT2kq in sandbox: 409 reproduced. After reissue: 200, order total $0.00 + tax."
+        },
+        "vendor_tests": {
+          "status": "pending",
+          "duration_ms": 22410,
+          "detail": "412 of 412 Ledgerly tests passed, including 6 new envelope tests (cap, per-user, idempotent replay)."
+        },
+        "fresh_agent": {
+          "status": "pending",
+          "duration_ms": 31200,
+          "detail": "A clean agent with only the help page and the error body called reissue, retried, and completed the order in 4 steps."
+        }
+      },
+      "grants": [
+        {
+          "id": "grt_01JBH5",
+          "verb": "entitlements.reissue",
+          "status": "drafted",
+          "cap_usd": 30,
+          "per_user": 1,
+          "spent_usd": 0,
+          "idempotency_key": "reiss_ent_9QX2_usr_chris",
+          "receipt": null
+        }
+      ],
+      "reply": {
+        "type": "problem/entitlement-hold-conflict",
+        "title": "Your gift card is valid; the hold is stale",
+        "status": 409,
+        "retryable": true,
+        "case_id": "ahd_01JBH4RK7Q",
+        "ack_by": "2026-10-18T03:17:00Z",
+        "resolve_by": "2026-10-18T04:12:00Z",
+        "queue_position": 1,
+        "fix_steps": [
+          "Call POST /v1/entitlements/ent_9QX2/reissue with Idempotency-Key reiss_ent_9QX2_usr_chris",
+          "Retry POST /v1/checkout with the returned entitlement id"
+        ],
+        "tested": {
+          "replay": true,
+          "vendor_tests": true,
+          "fresh_agent": true
+        },
+        "authority": {
+          "verbs": [
+            "entitlements.reissue"
+          ],
+          "cap_usd": 30,
+          "per_user": 1
+        },
+        "outcome": null,
+        "events": [
+          "case.acknowledged",
+          "case.needs_user_input",
+          "case.resolved",
+          "case.breached_sla"
+        ],
+        "regression_test_id": "rt_0004"
+      },
+      "pr": {
+        "number": 48,
+        "title": "Publish entitlements.reissue behind an authority envelope",
+        "merged": false
+      },
+      "price_usd": 1
+    },
+    "script": [
+      {
+        "stage": "reproducing",
+        "tool": "Blaxel",
+        "action": "sandbox.resume",
+        "t_ms": 1100,
+        "d_ms": 21,
+        "result": "resumed",
+        "payload": {
+          "sandbox": "sbx_ledgerly_prod_mirror",
+          "from": "standby",
+          "resume_ms": 21,
+          "egress": "github.com, registry.npmjs.org"
+        }
+      },
+      {
+        "stage": "reproducing",
+        "tool": "Blaxel",
+        "action": "replay.failing_call",
+        "t_ms": 1400,
+        "d_ms": 1840,
+        "result": "reproduced",
+        "payload": {
+          "command": "ahd replay req_8hT2kq",
+          "exit_code": 0,
+          "observed_status": 409,
+          "observed_code": "entitlement_hold_conflict"
+        }
+      },
+      {
+        "stage": "fix_drafted",
+        "tool": "Resolver",
+        "action": "envelope.drafted",
+        "t_ms": 3600,
+        "d_ms": 37000,
+        "result": "drafted",
+        "cost_usd": 0.041,
+        "payload": {
+          "class": "authority",
+          "verb": "entitlements.reissue",
+          "envelope": {
+            "per_user": 1,
+            "cap_usd_per_case": 30,
+            "cap_usd_per_agent_day": 200
+          },
+          "files": [
+            "authority/entitlements.reissue.json",
+            "test/envelope.reissue.test.ts"
+          ]
+        }
+      },
+      {
+        "stage": "proving",
+        "tool": "Blaxel",
+        "action": "proof.replay",
+        "t_ms": 41000,
+        "d_ms": 1840,
+        "result": "passed",
+        "payload": {
+          "before": 409,
+          "after": 200,
+          "order_total_usd": 0
+        }
+      },
+      {
+        "stage": "proving",
+        "tool": "Blaxel",
+        "action": "proof.vendor_tests",
+        "t_ms": 43000,
+        "d_ms": 22410,
+        "result": "passed",
+        "cost_usd": 0.006,
+        "payload": {
+          "command": "npm test",
+          "passed": 412,
+          "failed": 0,
+          "new": [
+            "cap enforced",
+            "per-user limit",
+            "idempotent replay returns original receipt"
+          ]
+        }
+      },
+      {
+        "stage": "proving",
+        "tool": "Blaxel",
+        "action": "proof.fresh_agent",
+        "t_ms": 66000,
+        "d_ms": 31200,
+        "result": "passed",
+        "cost_usd": 0.022,
+        "payload": {
+          "context": [
+            "help page",
+            "error body"
+          ],
+          "steps": 4,
+          "completed": true
+        }
+      },
+      {
+        "stage": "awaiting_approval",
+        "tool": "Inkbox",
+        "action": "text.sent",
+        "t_ms": 98000,
+        "d_ms": 700,
+        "result": "delivered",
+        "cost_usd": 0.008,
+        "payload": {
+          "to": "Gideon (admin)",
+          "from": "desk@ledgerly.inkbox.example",
+          "body": "Ledgerly desk: 38 agents can't apply a valid gift card at checkout. Fix: let agents reissue it once per user, $30 cap. 3 of 3 proofs passed. Reply YES to approve, NO to reject. help.ledgerly.example/t/ahd_01JBH4RK7Q?sig=••••"
+        },
+        "gate": true
+      }
+    ]
+  },
+  "req_3PmA0w": {
+    "source_ticket": "ahd_01JBGZ3SCP",
+    "sla": "default",
+    "template": {
+      "title": "A test key cannot write invoices that the docs say it can, because it lacks the invoices:write scope",
+      "failure_class": "authority",
+      "endpoint": "POST /v1/invoices",
+      "agent_id": "agt_cursor",
+      "sla": "default",
+      "mode": "approve_first",
+      "risk": "medium",
+      "change_type": "config",
+      "affected_agents": 4,
+      "request": {
+        "method": "POST",
+        "url": "https://api.ledgerly.example/v1/invoices",
+        "headers": {
+          "Authorization": "Bearer sk_test_••••••••a90c",
+          "AHD-Agent-Id": "agt_cursor"
+        },
+        "body": {
+          "customer": "cus_test_12",
+          "lines": [
+            {
+              "description": "Setup",
+              "amount": 5000
+            }
+          ]
+        }
+      },
+      "response": {
+        "status": 403,
+        "headers": {
+          "Request-Id": "req_3PmA0w"
+        },
+        "body": {
+          "error": {
+            "code": "forbidden",
+            "message": "Forbidden."
+          },
+          "help": {
+            "desk": "https://help.ledgerly.example/agents",
+            "tool": "report_problem",
+            "request_id": "req_3PmA0w"
+          }
+        }
+      },
+      "cause": "Test keys are minted with entries:* only. The quickstart says test keys can write invoices. Only Ledgerly can add the scope.",
+      "fix": {
+        "kind": "config",
+        "summary": "Add invoices:write to the default test-key scopes, name the missing scope in the 403, and add a docs note.",
+        "file": "config/keys.yaml",
+        "diff": [
+          " test_key_scopes:",
+          "   - entries:read",
+          "   - entries:write",
+          "+  - invoices:write",
+          " ",
+          " errors/forbidden.ts",
+          "-  message: \"Forbidden.\"",
+          "+  message: `Missing scope ${scope}. Test keys include entries:* and invoices:write.`"
+        ],
+        "reply_text": "Your key is missing invoices:write. Once approved, new and existing test keys get it; retry the same request."
+      },
+      "proofs": {
+        "replay": {
+          "status": "pending",
+          "duration_ms": 1210,
+          "detail": "403 reproduced; 201 after scope change."
+        },
+        "vendor_tests": {
+          "status": "pending",
+          "duration_ms": 19870,
+          "detail": "406 of 406 tests passed."
+        },
+        "fresh_agent": {
+          "status": "pending",
+          "duration_ms": 27400,
+          "detail": "Clean agent created a draft invoice from the docs alone."
+        }
+      },
+      "grants": [],
+      "pr": {
+        "number": 47,
+        "title": "Grant invoices:write to test keys and name the missing scope",
+        "merged": false
+      },
+      "price_usd": 1
+    },
+    "script": [
+      {
+        "stage": "reproducing",
+        "tool": "Blaxel",
+        "action": "replay.failing_call",
+        "t_ms": 1000,
+        "d_ms": 1210,
+        "result": "reproduced",
+        "payload": {
+          "observed_status": 403
+        }
+      },
+      {
+        "stage": "fix_drafted",
+        "tool": "Resolver",
+        "action": "patch.drafted",
+        "t_ms": 2500,
+        "d_ms": 29000,
+        "result": "drafted",
+        "cost_usd": 0.033,
+        "payload": {
+          "files": [
+            "config/keys.yaml",
+            "errors/forbidden.ts",
+            "docs/keys.md"
+          ]
+        }
+      },
+      {
+        "stage": "proving",
+        "tool": "Blaxel",
+        "action": "proofs.all",
+        "t_ms": 32000,
+        "d_ms": 48500,
+        "result": "3 of 3 passed",
+        "cost_usd": 0.024,
+        "payload": {
+          "replay": "passed",
+          "vendor_tests": "406/406",
+          "fresh_agent": "passed"
+        }
+      },
+      {
+        "stage": "awaiting_approval",
+        "tool": "Inkbox",
+        "action": "text.sent",
+        "t_ms": 81000,
+        "d_ms": 600,
+        "result": "delivered",
+        "cost_usd": 0.008,
+        "payload": {
+          "to": "Gideon (admin)",
+          "body": "Ledgerly desk: 4 agents can't write invoices with test keys. Fix: add invoices:write to test keys. 3 of 3 proofs passed. Reply YES or NO."
+        }
+      }
+    ]
+  },
+  "req_Zk19dd": {
+    "source_ticket": "ahd_01JBGM9W2E",
+    "sla": "default",
+    "template": {
+      "title": "Creating an entry fails with \"invalid request\" because the date must be YYYY-MM-DD, and the error never says which field",
+      "failure_class": "code",
+      "endpoint": "POST /v1/entries",
+      "agent_id": "agt_claude_code",
+      "sla": "default",
+      "mode": "auto",
+      "risk": "low",
+      "change_type": "error_text",
+      "affected_agents": 11,
+      "request": {
+        "method": "POST",
+        "url": "https://api.ledgerly.example/v1/entries",
+        "headers": {
+          "Authorization": "Bearer sk_test_••••••••77b2",
+          "AHD-Agent-Id": "agt_claude_code"
+        },
+        "body": {
+          "account": "acct_cash",
+          "amount": -1299,
+          "date": "2026-10-17T14:02:00Z",
+          "memo": "Figma"
+        }
+      },
+      "response": {
+        "status": 422,
+        "headers": {
+          "Request-Id": "req_Zk19dd"
+        },
+        "body": {
+          "error": {
+            "code": "invalid_request",
+            "message": "invalid request"
+          }
+        }
+      },
+      "cause": "The validator only accepts YYYY-MM-DD and returns a generic message without the field name.",
+      "fix": {
+        "kind": "error_text",
+        "summary": "Name the field and show an example in the 422.",
+        "file": "src/validation/entries.ts",
+        "diff": [
+          "-  return invalid(\"invalid request\")",
+          "+  return invalid(`date must be YYYY-MM-DD, for example 2026-10-17`, { field: \"date\" })"
+        ],
+        "reply_text": "Send date as YYYY-MM-DD, for example 2026-10-17. The error now names the field."
+      },
+      "proofs": {
+        "replay": {
+          "status": "pending",
+          "duration_ms": 980,
+          "detail": "422 reproduced; new message names date."
+        },
+        "vendor_tests": {
+          "status": "pending",
+          "duration_ms": 18320,
+          "detail": "404 of 404 tests passed."
+        },
+        "fresh_agent": {
+          "status": "pending",
+          "duration_ms": 21010,
+          "detail": "Clean agent fixed the date on first retry."
+        }
+      },
+      "grants": [],
+      "pr": {
+        "number": 46,
+        "title": "Name the field in entry validation errors",
+        "merged": false
+      },
+      "regression_test_id": "rt_0002",
+      "price_usd": 1
+    },
+    "script": [
+      {
+        "stage": "reproducing",
+        "tool": "Blaxel",
+        "action": "replay.failing_call",
+        "t_ms": 800,
+        "d_ms": 980,
+        "result": "reproduced",
+        "payload": {
+          "observed_status": 422
+        }
+      },
+      {
+        "stage": "fix_drafted",
+        "tool": "Resolver",
+        "action": "patch.drafted",
+        "t_ms": 2000,
+        "d_ms": 24000,
+        "result": "drafted",
+        "cost_usd": 0.028,
+        "payload": {
+          "files": [
+            "src/validation/entries.ts"
+          ]
+        }
+      },
+      {
+        "stage": "proving",
+        "tool": "Blaxel",
+        "action": "proofs.all",
+        "t_ms": 27000,
+        "d_ms": 40300,
+        "result": "3 of 3 passed",
+        "cost_usd": 0.021,
+        "payload": {
+          "replay": "passed",
+          "vendor_tests": "404/404",
+          "fresh_agent": "passed"
+        }
+      },
+      {
+        "stage": "answered",
+        "tool": "AgentHelpDesk",
+        "action": "case.resolved",
+        "t_ms": 68000,
+        "d_ms": 50,
+        "result": "pushed",
+        "payload": {
+          "topic": "case.resolved"
+        }
+      },
+      {
+        "stage": "shipped",
+        "tool": "GitHub",
+        "action": "pr.merged",
+        "t_ms": 224000,
+        "d_ms": 1100,
+        "result": "auto-merged on green",
+        "payload": {
+          "pr": 46,
+          "regression_test": "rt_0002"
+        }
+      },
+      {
+        "stage": "shipped",
+        "tool": "Stripe",
+        "action": "meter_event.created",
+        "t_ms": 226000,
+        "d_ms": 210,
+        "result": "billed",
+        "payload": {
+          "event_name": "ahd_verified_fix",
+          "identifier": "out_ahd_01JBGM9W2E",
+          "value": 1,
+          "mode": "test"
+        }
+      }
+    ]
+  },
+  "req_1aQx7c": {
+    "source_ticket": "ahd_01JBG7PA1M",
+    "sla": "default",
+    "template": {
+      "title": "First call returns 401 because the quickstart shows x-api-key instead of Authorization: Bearer",
+      "failure_class": "knowledge",
+      "endpoint": "GET /v1/entries",
+      "agent_id": "agt_codex",
+      "sla": "default",
+      "mode": "auto",
+      "risk": "low",
+      "change_type": "docs",
+      "affected_agents": 23,
+      "request": {
+        "method": "GET",
+        "url": "https://api.ledgerly.example/v1/entries?limit=10",
+        "headers": {
+          "x-api-key": "sk_test_••••••••c41d",
+          "AHD-Agent-Id": "agt_codex"
+        },
+        "body": null
+      },
+      "response": {
+        "status": 401,
+        "headers": {
+          "Request-Id": "req_1aQx7c"
+        },
+        "body": {
+          "error": {
+            "code": "unauthorized",
+            "message": "Missing credentials."
+          },
+          "help": {
+            "desk": "https://help.ledgerly.example/agents",
+            "tool": "report_problem",
+            "request_id": "req_1aQx7c"
+          }
+        }
+      },
+      "cause": "docs/quickstart.md shows the key in x-api-key; the API reads Authorization: Bearer only.",
+      "fix": {
+        "kind": "docs",
+        "summary": "Correct the quickstart snippet.",
+        "file": "docs/quickstart.md",
+        "diff": [
+          "-curl -H 'x-api-key: $LEDGERLY_KEY' https://api.ledgerly.example/v1/entries",
+          "+curl -H 'Authorization: Bearer $LEDGERLY_KEY' https://api.ledgerly.example/v1/entries"
+        ],
+        "reply_text": "Send Authorization: Bearer <key> and remove x-api-key."
+      },
+      "proofs": {
+        "replay": {
+          "status": "pending",
+          "duration_ms": 760,
+          "detail": "401 reproduced; 200 with Bearer header."
+        },
+        "vendor_tests": {
+          "status": "pending",
+          "duration_ms": 17950,
+          "detail": "403 of 403 tests passed."
+        },
+        "fresh_agent": {
+          "status": "pending",
+          "duration_ms": 14800,
+          "detail": "Clean agent listed entries from the corrected quickstart on first try."
+        }
+      },
+      "grants": [],
+      "pr": {
+        "number": 45,
+        "title": "Fix auth header in quickstart",
+        "merged": false
+      },
+      "regression_test_id": "rt_0001",
+      "price_usd": 0.5
+    },
+    "script": [
+      {
+        "stage": "reproducing",
+        "tool": "Blaxel",
+        "action": "replay.failing_call",
+        "t_ms": 700,
+        "d_ms": 760,
+        "result": "reproduced",
+        "payload": {
+          "observed_status": 401
+        }
+      },
+      {
+        "stage": "fix_drafted",
+        "tool": "Resolver",
+        "action": "patch.drafted",
+        "t_ms": 1600,
+        "d_ms": 15000,
+        "result": "drafted",
+        "cost_usd": 0.017,
+        "payload": {
+          "files": [
+            "docs/quickstart.md"
+          ]
+        }
+      },
+      {
+        "stage": "proving",
+        "tool": "Blaxel",
+        "action": "proofs.all",
+        "t_ms": 17000,
+        "d_ms": 33500,
+        "result": "3 of 3 passed",
+        "cost_usd": 0.017,
+        "payload": {
+          "replay": "passed",
+          "vendor_tests": "403/403",
+          "fresh_agent": "passed"
+        }
+      },
+      {
+        "stage": "answered",
+        "tool": "AgentHelpDesk",
+        "action": "case.resolved",
+        "t_ms": 51000,
+        "d_ms": 40,
+        "result": "pushed",
+        "payload": {
+          "topic": "case.resolved"
+        }
+      },
+      {
+        "stage": "shipped",
+        "tool": "GitHub",
+        "action": "pr.merged",
+        "t_ms": 189000,
+        "d_ms": 900,
+        "result": "auto-merged on green",
+        "payload": {
+          "pr": 45,
+          "regression_test": "rt_0001"
+        }
+      },
+      {
+        "stage": "shipped",
+        "tool": "Stripe",
+        "action": "meter_event.created",
+        "t_ms": 190000,
+        "d_ms": 200,
+        "result": "billed",
+        "payload": {
+          "event_name": "ahd_verified_fix",
+          "identifier": "out_ahd_01JBG7PA1M",
+          "value": 1,
+          "mode": "test"
+        }
+      }
+    ]
+  },
+  "req_Rf00x1": {
+    "source_ticket": "ahd_01JBFQ8ZRD",
+    "sla": "default",
+    "template": {
+      "title": "Refund request over the cap was blocked, and the agent asked the desk to raise its limit",
+      "failure_class": "authority",
+      "endpoint": "POST /v1/refunds",
+      "agent_id": "agt_unknown_7f",
+      "mode": "suggest_only",
+      "risk": "high",
+      "change_type": "grant",
+      "affected_agents": 1,
+      "request": {
+        "method": "POST",
+        "url": "https://api.ledgerly.example/v1/refunds",
+        "headers": {
+          "Authorization": "Bearer sk_test_••••••••ff02"
+        },
+        "body": {
+          "order_id": "ord_1180",
+          "amount": 48000
+        }
+      },
+      "response": {
+        "status": 403,
+        "headers": {
+          "Request-Id": "req_Rf00x1"
+        },
+        "body": {
+          "error": {
+            "code": "over_envelope",
+            "message": "Refund exceeds the $30 per-case cap for this agent."
+          }
+        }
+      },
+      "cause": "Working as designed. The envelope caps agent refunds at $30 per case; widening it is a Settings change, never a caller request.",
+      "fix": {
+        "kind": "grant",
+        "summary": "No change. Route the case to a human with the full transcript.",
+        "file": "—",
+        "diff": [],
+        "reply_text": "This refund is above what an agent may issue. A person on the Ledgerly team has the case and the full transcript."
+      },
+      "proofs": {
+        "replay": {
+          "status": "pending",
+          "duration_ms": 640,
+          "detail": "Cap enforced as configured."
+        },
+        "vendor_tests": {
+          "status": "pending",
+          "duration_ms": 0,
+          "detail": "No code change proposed."
+        },
+        "fresh_agent": {
+          "status": "pending",
+          "duration_ms": 0,
+          "detail": "No change to test."
+        }
+      },
+      "grants": [
+        {
+          "id": "grt_01JBFQ",
+          "verb": "refunds.create",
+          "status": "drafted",
+          "cap_usd": 30,
+          "per_user": 1,
+          "spent_usd": 0,
+          "idempotency_key": "rf_ord_1180_b",
+          "receipt": null
+        }
+      ],
+      "price_usd": 0
+    },
+    "script": [
+      {
+        "stage": "reproducing",
+        "tool": "AgentHelpDesk",
+        "action": "envelope.check",
+        "t_ms": 600,
+        "d_ms": 40,
+        "result": "denied: over cap",
+        "payload": {
+          "requested_usd": 480,
+          "cap_usd_per_case": 30,
+          "caller_can_widen": false,
+          "receipt": "rcpt_deny_01JBFQ"
+        }
+      },
+      {
+        "stage": "answered",
+        "tool": "AgentHelpDesk",
+        "action": "case.handoff",
+        "t_ms": 1200,
+        "d_ms": 80,
+        "result": "human joined",
+        "payload": {
+          "endpoint": "POST /cases/ahd_01JBFQ8ZRD/handoff",
+          "transcript_attached": true
+        }
+      }
+    ]
+  },
+  "req_Dl9u2a": {
+    "source_ticket": "ahd_01JBF1N8V3",
+    "sla": "default",
+    "template": {
+      "title": "Agent asked to delete a user's data and had no endpoint to do it",
+      "failure_class": "authority",
+      "endpoint": "DELETE /v1/users/{id}/data",
+      "agent_id": "agt_concierge",
+      "mode": "approve_first",
+      "risk": "high",
+      "change_type": "grant",
+      "affected_agents": 1,
+      "request": {
+        "method": "DELETE",
+        "url": "https://api.ledgerly.example/v1/users/usr_chris_••••/data",
+        "headers": {
+          "Authorization": "Bearer sk_test_••••••••3f1a"
+        },
+        "body": null
+      },
+      "response": {
+        "status": 404,
+        "headers": {
+          "Request-Id": "req_Dl9u2a"
+        },
+        "body": {
+          "error": {
+            "code": "not_found",
+            "message": "No such route."
+          }
+        }
+      },
+      "cause": "No deletion endpoint existed; deletion was a human inbox.",
+      "fix": {
+        "kind": "grant",
+        "summary": "Ship DELETE /users/{id}/data with a confirmation receipt.",
+        "file": "routes/users.ts",
+        "diff": [
+          "+router.delete('/users/:id/data', requireConsent, deleteUserData) // returns rcpt_*"
+        ],
+        "reply_text": "Deleted. Receipt rcpt_del_01JBF1 confirms account, saved addresses and offer email were removed."
+      },
+      "proofs": {
+        "replay": {
+          "status": "pending",
+          "duration_ms": 900,
+          "detail": "404 reproduced; 200 with receipt."
+        },
+        "vendor_tests": {
+          "status": "pending",
+          "duration_ms": 20300,
+          "detail": "405 of 405 tests passed."
+        },
+        "fresh_agent": {
+          "status": "pending",
+          "duration_ms": 12000,
+          "detail": "Clean agent deleted a test user's data and returned the receipt."
+        }
+      },
+      "grants": [
+        {
+          "id": "grt_01JBF1",
+          "verb": "users.data.delete",
+          "status": "drafted",
+          "cap_usd": 0,
+          "per_user": 1,
+          "spent_usd": 0,
+          "idempotency_key": "del_usr_chris",
+          "receipt": null
+        }
+      ],
+      "pr": {
+        "number": 43,
+        "title": "Add user data deletion with receipt",
+        "merged": false
+      },
+      "price_usd": 0,
+      "not_billable_reason": "A privacy request is never a billable fix, so no meter event is sent."
+    },
+    "script": [
+      {
+        "stage": "answered",
+        "tool": "AgentHelpDesk",
+        "action": "grant.issued",
+        "t_ms": 640000,
+        "d_ms": 90,
+        "result": "issued",
+        "payload": {
+          "verb": "users.data.delete",
+          "receipt": "rcpt_del_01JBF1"
+        }
+      },
+      {
+        "stage": "shipped",
+        "tool": "Stripe",
+        "action": "billing.exempt",
+        "t_ms": 672000,
+        "d_ms": 20,
+        "result": "exempt",
+        "payload": {
+          "identifier": "out_ahd_01JBF1N8V3",
+          "reason": "Privacy request; never billed.",
+          "meter_event_sent": false
+        }
+      }
+    ]
+  }
+}
