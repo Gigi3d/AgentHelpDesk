@@ -1,0 +1,54 @@
+# Dependencies. Nothing in this repo needs a package manager to read, and
+# product/ has zero runtime dependencies by design.
+# No trailing slash on purpose: mcp/node_modules is a symlink, and git tracks a
+# symlink as a file, so a directory-only pattern would let it through.
+node_modules
+node_modules 2
+node_modules.nosync
+.pnpm-store
+
+# Build output
+dist/
+.vite/
+.mcp-use/
+*.tsbuildinfo
+
+# Local runtime state. mcp/src/data/ holds fixtures and IS committed; this only
+# matches the store file the mcp server writes at runtime.
+mcp/data/
+
+# Environment and secrets. Credentials come from env only, never from the repo.
+.env
+.env.*
+*.pem
+*.key
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editors and OS
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.claude/
+*.swp
+*.swo
+*~
+
+# Superseded scratch, kept locally but not published
+mcp/_attic/
+web/_attic/
+
+# Not for publication. evidence/ holds raw screenshots that still need redaction,
+# and the YC application draft is a private submission.
+evidence/
+YC Application*
+
+# Binary duplicates of the markdown docs
+*.docx
+*.pdf
+
+# The slide deck is a presentation, not part of the code or the docs package
+deck-source/
