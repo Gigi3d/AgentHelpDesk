@@ -12,8 +12,9 @@ const COOLDOWN_KEY = 'ahd-wake-at';
 type Phase = 'idle' | 'asking' | 'waiting' | 'back' | 'failed';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// /healthz is answered by Blaxel's proxy even when the desk is dead; /v1/status comes from the desk.
 const alive = async () => {
-  try { return (await fetch(`${API_BASE}/healthz`, { cache: 'no-store', signal: AbortSignal.timeout(6000) })).ok; } catch { return false; }
+  try { return (await fetch(`${API_BASE}/v1/status`, { cache: 'no-store', signal: AbortSignal.timeout(6000) })).ok; } catch { return false; }
 };
 
 export function WakeDesk({ compact = false }: { compact?: boolean }) {
