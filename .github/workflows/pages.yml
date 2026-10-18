@@ -25,6 +25,7 @@ jobs:
         working-directory: web
         env:
           VITE_API_URL: ${{ vars.AHD_LIVE_URL || 'https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run' }}
+          VITE_LIVE: '1'
           VITE_BASE: /AgentHelpDesk/
         run: |
           npm ci --no-audit --no-fund || npm i --no-audit --no-fund
