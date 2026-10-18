@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Code, JsonView } from '../components/Json';
+import { FlowDiagram, SPONSORS } from '../components/FlowDiagram';
 import { Logo } from '../components/Shell';
 import { Button, Card } from '../components/ui';
 
@@ -43,6 +44,31 @@ export default function Landing() {
       </section>
 
       <section className="mx-auto max-w-[1120px] px-4 py-16 md:px-6">
+        <h2 className="text-[26px] font-semibold tracking-tight">How it fits together</h2>
+        <p className="mt-2 max-w-2xl text-[15px] text-muted">A failed call becomes a verified fix. Claude is the resolver, and the vendor pays only if the agent’s retry works.</p>
+        <div className="mt-6 overflow-x-auto rounded-card border border-line bg-white p-2">
+          <FlowDiagram />
+        </div>
+        <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {SPONSORS.map((s) => (
+            <Card key={s.name} className={s.lead ? 'border-blue p-5' : 'p-5'}>
+              <div className="flex items-baseline justify-between gap-3">
+                <div className="text-[15px] font-semibold">{s.name}</div>
+                <div className="font-mono text-[11.5px] text-blue-text">{s.role}</div>
+              </div>
+              <p className="mt-2 text-[14px] text-ink/85">{s.what}</p>
+              <ul className="mt-3 flex flex-wrap gap-1.5">
+                {s.tools.map((t) => (
+                  <li key={t} className="rounded-ctl border border-line bg-surface px-2 py-0.5 font-mono text-[11.5px] text-muted">{t}</li>
+                ))}
+              </ul>
+            </Card>
+          ))}
+        </div>
+        <p className="mt-4 text-[13px] text-muted">Also used: GitHub Pages for the always-on front door, and GitHub Actions to deploy the desk and bring it back if it restarts.</p>
+      </section>
+
+      <section className="mx-auto max-w-[1120px] px-4 pb-16 md:px-6">
         <h2 className="text-[26px] font-semibold tracking-tight">Three kinds of failure, one desk</h2>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           {[
