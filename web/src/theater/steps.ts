@@ -44,16 +44,16 @@ interface Def {
 }
 
 export const DEFS: Def[] = [
-  { key: 'create', title: 'Open a private sandbox', caption: 'A fresh Blaxel sandbox, named for this case, holds a copy of the vendor repo.', actions: ['sandbox.provisioned'] },
-  { key: 'reproduce', title: 'Make the failure happen again', caption: 'The agent’s exact call is replayed. It has to fail the same way before anything changes.', actions: ['case.reproduced'] },
-  { key: 'draft', title: 'Claude drafts the fix', caption: 'Claude reads the vendor’s real files and rewrites the doc, error text or config.', actions: ['case.fix_drafted', 'resolver.draft', 'resolver.reused'] },
-  { key: 'replay', title: 'Replay the call on the fix', caption: 'The same call, against the fixed files. It must now succeed.', actions: ['proof.replay'] },
-  { key: 'tests', title: 'Run the vendor’s own tests', caption: 'The vendor’s test suite runs in the sandbox. A fix that breaks it does not ship.', actions: ['proof.vendor_tests'] },
-  { key: 'fresh', title: 'A fresh agent tries from the docs', caption: 'A clean copy of the sandbox and an agent that sees only the task and the fixed docs.', actions: ['proof.fresh_agent'] },
-  { key: 'approval', title: 'Gate', caption: 'Autonomous vendors ship on three green proofs. Others wait here for one reply from the approver.', actions: ['approval.decided', 'approval.requested', 'gate.auto_green'] },
-  { key: 'ship', title: 'Ship the fix', caption: 'The agent gets the verified answer. The vendor gets a PR note and a regression test.', actions: ['ship.emitted', 'case.resolved'] },
-  { key: 'retry', title: 'The agent retries', caption: 'The agent runs its original call again with the fix applied. This is the real test.', actions: [] },
-  { key: 'bill', title: 'Bill only if it worked', caption: 'One Stripe meter event, only when all three proofs passed and the retry succeeded.', actions: ['meter_event.created', 'mpp.settled', 'billing.not_billable', 'billing.exempt'] },
+  { key: 'create', title: 'Open a private sandbox', caption: 'A Blaxel sandbox for this case holds a copy of the vendor repo.', actions: ['sandbox.provisioned'] },
+  { key: 'reproduce', title: 'Make the failure happen again', caption: 'The agent’s call is replayed. It must fail the same way.', actions: ['case.reproduced'] },
+  { key: 'draft', title: 'Claude drafts the fix', caption: 'Claude reads the vendor’s files and fixes the doc, error or config.', actions: ['case.fix_drafted', 'resolver.draft', 'resolver.reused'] },
+  { key: 'replay', title: 'Replay the call on the fix', caption: 'The same call on the fix. It must now succeed.', actions: ['proof.replay'] },
+  { key: 'tests', title: 'Run the vendor’s own tests', caption: 'The vendor’s tests run in the sandbox. A fix that breaks them does not ship.', actions: ['proof.vendor_tests'] },
+  { key: 'fresh', title: 'A fresh agent tries from the docs', caption: 'A clean sandbox copy and an agent that sees only the task and the fixed docs.', actions: ['proof.fresh_agent'] },
+  { key: 'approval', title: 'Gate', caption: 'Autonomous vendors ship on three green proofs. Others wait for one reply.', actions: ['approval.decided', 'approval.requested', 'gate.auto_green'] },
+  { key: 'ship', title: 'Ship the fix', caption: 'The agent gets the verified answer. The vendor gets a PR note and a test.', actions: ['ship.emitted', 'case.resolved'] },
+  { key: 'retry', title: 'The agent retries', caption: 'The agent repeats its call with the fix. The real test.', actions: [] },
+  { key: 'bill', title: 'Bill only if it worked', caption: 'One Stripe meter event, only if all three proofs passed and the retry worked.', actions: ['meter_event.created', 'mpp.settled', 'billing.not_billable', 'billing.exempt'] },
 ];
 
 const lastOf = (events: Ev[], actions: string[]): Ev | null => {

@@ -143,7 +143,7 @@ export default function Home() {
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <Card>
-          <CardHead title="Ticket feed" sub="Most recent first. Chips show the tools that worked each ticket." right={<Link to="/app/tickets" className="text-[13px] text-blue hover:underline">All tickets</Link>} />
+          <CardHead title="Ticket feed" sub="Newest first." right={<Link to="/app/tickets" className="text-[13px] text-blue hover:underline">All tickets</Link>} />
           <ul className="divide-y divide-line">
             {[...tickets].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)).map((t) => {
               const tools = [...new Set(eventsFor(t.id).map((e) => e.tool))];

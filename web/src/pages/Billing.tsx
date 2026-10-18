@@ -60,11 +60,11 @@ th{color:#5B6475;font-weight:500;text-transform:uppercase;font-size:11px;letter-
   };
 
   const addPayment = () =>
-    toast('Test mode charges nothing, so no card is collected. Leaving test mode opens Stripe’s hosted form — AgentHelpDesk never handles card numbers.', 'info');
+    toast('Test mode charges nothing. Live mode uses Stripe’s hosted form; we never see card numbers.', 'info');
 
   return (
     <div>
-      <PageHeader title="Billing" sub="You pay per verified fix that the agent then uses successfully. Provider (B2B) metering settles on Stripe; agent-to-agent calls settle per-call on x402. The invoice is the proof the desk earned its fee." />
+      <PageHeader title="Billing" sub="You pay per verified fix the agent then uses. Vendors settle on Stripe; agent-to-agent calls settle per call on x402." />
       <div className="mb-6 flex items-center gap-3 rounded-card bg-pink-tint px-5 py-3 text-[14px] text-pink-text">
         <span className="font-semibold">No live payment method.</span> Nothing is being charged. Meter events go to Stripe in test mode.
         <Button variant="primary" size="sm" className="ml-auto" onClick={addPayment}>Add payment method</Button>
@@ -96,7 +96,7 @@ th{color:#5B6475;font-weight:500;text-transform:uppercase;font-size:11px;letter-
           </Card>
 
           <Card>
-            <CardHead title="Meter events" sub="One per billable outcome: three proofs passed and the agent’s retry succeeded. The outcome id is the identifier, so a retry can never bill twice." />
+            <CardHead title="Meter events" sub="One per fix: three proofs passed and the agent’s retry worked. The outcome id prevents double billing." />
             <ul className="divide-y divide-line">
               {meter.map((e) => {
                 const t = tickets.find((x) => x.id === e.ticket_id);

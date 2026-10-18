@@ -169,9 +169,9 @@ export default function Theater() {
 
       {!view && (
         <main className="mx-auto max-w-[640px] py-16 text-center">
-          <h1 className="text-[28px] font-semibold tracking-tight">Watch a case run inside its sandbox</h1>
+          <h1 className="text-[28px] font-semibold tracking-tight">Watch a case run</h1>
           <p className="mx-auto mt-3 max-w-[48ch] text-[15px] leading-relaxed text-muted">
-            Every step you see is read from the desk’s own record of the case. Run the Ledgerly case to see a real one, or open any ticket from the console.
+            Steps come from the desk’s own record of a case. Run the Ledgerly case, or open any ticket.
           </p>
           {error && <p className="mt-6 text-[14px] text-error-text">{error}</p>}
         </main>

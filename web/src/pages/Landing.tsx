@@ -24,14 +24,14 @@ export default function Landing() {
 
       <section className="mx-auto grid max-w-[1120px] items-center gap-10 px-4 pb-16 pt-10 md:px-6 lg:grid-cols-[1.1fr_1fr] lg:pt-16">
         <div>
-          <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-blue-tint px-3 py-1 text-[12.5px] font-medium text-blue-text"><span className="h-1.5 w-1.5 rounded-full bg-blue" />The support desk for the agents that use your API</p>
+          <p className="mb-4 inline-flex items-center gap-2 rounded-full bg-blue-tint px-3 py-1 text-[12.5px] font-medium text-blue-text"><span className="h-1.5 w-1.5 rounded-full bg-blue" />A support desk for agents</p>
           <h1 className="text-[40px] font-semibold leading-[1.08] tracking-tight md:text-[52px]">When an agent can’t use your API, it gets an answer. <span className="text-pink">Proven first.</span></h1>
-          <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-muted">AgentHelpDesk opens a case with a committed deadline, reproduces the failure in a sandbox, proves a fix three ways, and hands the agent something it can run. You approve the risky ones from your phone.</p>
+          <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-muted">The desk reproduces the failure in a sandbox, proves a fix three ways, and gives the agent something it can run. Proven fixes ship on their own.</p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link to="/install"><Button variant="primary" size="lg">Start without GitHub</Button></Link>
             <Link to={heroTo}><Button size="lg">See a live ticket</Button></Link>
           </div>
-          <p className="mt-4 text-[13px] text-muted">Pay per verified fix. Nothing ships without three proofs. Four of the five install paths need no GitHub; the fifth merges one PR.</p>
+          <p className="mt-4 text-[13px] text-muted">You pay only for a fix the agent then uses successfully. Four of five install paths need no GitHub.</p>
         </div>
         <JsonView
           file="what the failing agent gets back"
@@ -45,17 +45,17 @@ export default function Landing() {
         <div className="mx-auto max-w-[1120px] px-4 py-14 md:px-6">
           <p className="text-label font-medium uppercase text-muted">Oct 16, 2026 · 7:33 p.m. · San Francisco</p>
           <blockquote className="mt-3 max-w-3xl text-[24px] font-medium leading-snug md:text-[28px]">“The snag is on our end applying it at checkout, so support@hark.com is the fastest fix.”</blockquote>
-          <p className="mt-3 max-w-2xl text-[15px] text-muted">A vendor’s own agent, on launch night. It had the right diagnosis and the right attribution, and nothing to call but a human inbox. That is an <span className="font-semibold text-ink">authority</span> failure: no agent can fix it alone, because the grant is the vendor’s to give.</p>
+          <p className="mt-3 max-w-2xl text-[15px] text-muted">A vendor’s own agent, on launch night. It knew the problem and had no one to call but an inbox. That is an <span className="font-semibold text-ink">authority</span> failure: only the vendor can grant the fix.</p>
         </div>
       </section>
 
       <section className="mx-auto max-w-[1120px] px-4 py-16 md:px-6">
-        <h2 className="text-[26px] font-semibold tracking-tight">Three kinds of agent failure. One desk.</h2>
+        <h2 className="text-[26px] font-semibold tracking-tight">Three kinds of failure, one desk</h2>
         <div className="mt-6 grid gap-4 md:grid-cols-3">
           {[
-            ['Knowledge', 'The docs were wrong or missing. The desk corrects them and the agent retries.', 'Ships alone in Auto mode once proven'],
-            ['Code', 'The fix lives in your repo. The desk opens a proven PR with a regression test.', 'Waits for one reply by text'],
-            ['Authority', 'Only you can grant it. The desk publishes a bounded verb with a cap, a per-user limit, an idempotency key and a receipt.', 'The part no agent can do alone'],
+            ['Knowledge', 'The docs are wrong or missing. The desk corrects them and the agent retries.', 'Ships alone once proven'],
+            ['Code', 'The fix is in your repo. The desk opens a proven PR with a regression test.', 'You merge the PR'],
+            ['Authority', 'Only you can grant it. The desk offers a capped, receipted grant.', 'No agent can do this alone'],
           ].map(([k, v, s], i) => (
             <Card key={k} className={i === 2 ? 'border-ink p-6' : 'p-6'}>
               <div className="text-[15px] font-semibold">{k}</div>
@@ -69,7 +69,7 @@ export default function Landing() {
       <section className="mx-auto max-w-[1120px] px-4 pb-16 md:px-6">
         <h2 className="text-[26px] font-semibold tracking-tight">How a ticket moves</h2>
         <ol className="mt-6 grid gap-3 md:grid-cols-5">
-          {[['Case', 'A committed ack and resolve-by, returned at intake.'], ['Reproduce', 'The exact call, in a sandbox of your product.'], ['Fix', 'Docs, error text, config, code, or a grant.'], ['Prove', 'Replay, your tests, and a fresh agent. All three.'], ['Reply and ship', 'An outcome the agent can run. A PR, or your approval.']].map(([k, v], i) => (
+          {[['Case', 'Committed ack and resolve times.'], ['Reproduce', 'The exact call, in a Blaxel sandbox.'], ['Fix', 'Docs, errors, config, code or a grant.'], ['Prove', 'Replay, your tests, a fresh agent.'], ['Ship', 'The agent retries. Billed on success.']].map(([k, v], i) => (
             <li key={k} className="rounded-card border border-line p-4"><div className="font-mono text-[12px] text-pink">0{i + 1}</div><div className="mt-1 text-[15px] font-semibold">{k}</div><p className="mt-1 text-[13.5px] text-muted">{v}</p></li>
           ))}
         </ol>
@@ -78,8 +78,8 @@ export default function Landing() {
       <section className="border-t border-line">
         <div className="mx-auto grid max-w-[1120px] items-center gap-8 px-4 py-14 md:grid-cols-2 md:px-6">
           <div>
-            <h2 className="text-[26px] font-semibold tracking-tight">Five ways in, least permission first.</h2>
-            <p className="mt-2 text-[15px] text-muted">Start with a forwarded failing call or your OpenAPI spec — no GitHub, no repo access, and every answer labelled a suggestion. Connect a repo when a fix has to be proved and merged: we read your spec, tests and CI, and write pull requests, never commits. We never merge, read secrets, or touch production.</p>
+            <h2 className="text-[26px] font-semibold tracking-tight">Five ways in, least access first</h2>
+            <p className="mt-2 text-[15px] text-muted">Start with a forwarded failing call or your OpenAPI spec: no repo access, answers are suggestions. Connect a repo to prove and ship fixes. We open pull requests, never merge, and never touch secrets or production.</p>
             <Link to="/install" className="mt-5 inline-block"><Button variant="primary" size="lg">See the install paths</Button></Link>
           </div>
           <Code file="terminal">npx agenthelpdesk init</Code>
