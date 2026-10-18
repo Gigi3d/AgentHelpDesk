@@ -227,6 +227,33 @@ for (let i = 0; i < 30 && !edgeUp; i++) {
 }
 say(edgeUp ? `7c. MCP edge is up: ${edgeUrl}/mcp` : `7c. MCP edge did not answer on ${edgeUrl}/mcp (check the 'edge' process logs in the console)`);
 
+// 7d. Self-heal inside the sandbox. A cold restart of the sandbox does not bring back processes, which is
+//     what left the preview showing "could not proxy". A schedule runs this script every minute and starts
+//     whichever of the desk or the edge is not answering, so recovery does not depend on GitHub or on us.
+const ensure = `#!/bin/bash
+S=$(command -v setsid || true)
+up() { [ "$(curl -s -o /dev/null -m 5 -w '%{http_code}' "$1")" != "000" ]; }
+if ! up http://127.0.0.1:${PORT}/v1/status; then
+  cd /app && set -a && . ./ahd.env && set +a
+  $S nohup ${NODE} --experimental-strip-types product/server.ts >> /app/data/desk.log 2>&1 < /dev/null &
+fi
+if ! up http://127.0.0.1:${EDGE_PORT}/; then
+  cd /app/mcp && set -a && . /app/ahd-edge.env && set +a
+  $S nohup npx mcp-use start --port ${EDGE_PORT} >> /app/data/edge.log 2>&1 < /dev/null &
+fi
+exit 0
+`;
+await sb.fs.write('/app/ensure.sh', ensure);
+await sh('chmod 700 /app/ensure.sh');
+try {
+  const page = await sb.schedules.list({ limit: 100 });
+  for await (const e of page) if (String(e?.input?.command ?? '').includes('/app/ensure.sh')) await sb.schedules.delete(e.id);
+  await sb.schedules.create({ type: 'cron', value: '* * * * *', input: { command: 'bash /app/ensure.sh' } });
+  say('7d. Self-heal schedule set (checks the desk and edge every minute)');
+} catch (err) {
+  say(`7d. Could not set the self-heal schedule (${err?.message ?? err}); the GitHub keep-live check still covers it`);
+}
+
 // 8. Wait for health.
 let healthy = false;
 for (let i = 0; i < 30 && !healthy; i++) {
