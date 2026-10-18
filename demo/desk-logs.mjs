@@ -17,7 +17,11 @@ const sb = await SandboxInstance.get(process.env.AHD_DEPLOY_NAME || 'ahd-desk');
 console.log('sandbox status:', sb.status);
 let procs = [];
 try { procs = await sb.process.list(); } catch (e) { console.log('process list failed:', e?.message ?? e); }
-for (const p of procs) console.log(`process ${p.name}: status=${p.status} exit=${p.exitCode ?? '-'} restarts=${p.restartCount ?? '-'} pid=${p.pid ?? '-'}`);
+for (const p of procs.filter((x) => ['desk', 'edge'].includes(x.name))) console.log(`process ${p.name}: status=${p.status} exit=${p.exitCode ?? '-'} restarts=${p.restartCount ?? '-'} pid=${p.pid ?? '-'}`);
+try {
+  const page = await sb.schedules.list({ limit: 20 });
+  for await (const e of page) console.log(`schedule ${e.id}: ${e.type} ${e.value} -> ${e.input?.command ?? '?'}`);
+} catch (e) { console.log('schedules unavailable:', e?.message ?? e); }
 for (const name of ['desk', 'edge']) {
   try {
     const logs = String(await sb.process.logs(name, 'all'));
