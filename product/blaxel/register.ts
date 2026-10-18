@@ -37,9 +37,15 @@ interface SandboxRow {
 export async function listSandboxes(): Promise<SandboxRow[]> {
   const sdk = (await client.loadSdk()) as unknown as Record<string, unknown>;
   const si = rec(sdk['SandboxInstance']);
-  const list = si['list'];
-  if (typeof list !== 'function') throw new Error('the installed @blaxel/core has no SandboxInstance.list');
-  const page = await (list as (q?: unknown) => Promise<unknown>).call(si, { limit: 100 });
+  let page: unknown;
+  if (typeof si['list'] === 'function') {
+    page = await (si['list'] as (q?: unknown) => Promise<unknown>).call(si, { limit: 100 });
+  } else if (typeof sdk['listSandboxes'] === 'function') {
+    // @blaxel/core 0.3.x has no SandboxInstance.list; the generated client function returns { data: [...] }.
+    page = await (sdk['listSandboxes'] as (o?: unknown) => Promise<unknown>)({ throwOnError: true });
+  } else {
+    throw new Error('the installed @blaxel/core has neither SandboxInstance.list nor listSandboxes');
+  }
   const rows: SandboxRow[] = [];
   const take = (item: unknown): void => {
     const o = rec(item);

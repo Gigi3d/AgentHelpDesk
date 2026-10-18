@@ -52,7 +52,7 @@ try {
   res = await fetch(`${baseUrl}/v1/messages`, {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model, max_tokens: 1024, system, messages: [{ role: 'user', content: user }] }),
+    body: JSON.stringify({ model, max_tokens: 8192, system, messages: [{ role: 'user', content: user }] }),
     signal: AbortSignal.timeout(90_000),
   });
 } catch (err) {
@@ -60,10 +60,11 @@ try {
 }
 const raw = await res.text();
 if (!res.ok) fail(`the Messages API answered ${res.status}: ${raw.slice(0, 300)}`);
-const text = (JSON.parse(raw).content ?? []).filter((c) => c.type === 'text').map((c) => c.text).join('');
+const parsed = JSON.parse(raw);
+const text = (parsed.content ?? []).filter((c) => c.type === 'text').map((c) => c.text).join('');
 const open = text.indexOf('{');
 const close = text.lastIndexOf('}');
-if (open < 0 || close < open) fail(`the agent did not return a JSON request: ${text.slice(0, 200)}`);
+if (open < 0 || close < open) fail(`the agent did not return a JSON request (stop_reason ${parsed.stop_reason ?? 'n/a'}, ${text.length} chars of text): ${text.slice(0, 200)}`);
 let req;
 try {
   req = JSON.parse(text.slice(open, close + 1));
