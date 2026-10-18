@@ -2,7 +2,7 @@
 // Stateless by design: all state lives in the Repository, so N copies of this
 // process can sit behind a load balancer. Modules register their own routes.
 import { withPersistence } from './store/persist.ts';
-import { bearerOk } from './http-auth.ts';
+import { bearerOk, openWithoutToken } from './http-auth.ts';
 import { serveStatic } from './static.ts';
 import { existsSync } from 'node:fs';
 import { resolve as resolvePath } from 'node:path';
@@ -25,6 +25,7 @@ import { registerRoutes as registerInkbox } from './inkbox/register.ts';
 import { startNotifier } from './inkbox/notify.ts';
 import { registerRoutes as registerFeeds } from './feeds/register.ts';
 import { registerRoutes as registerScenarios } from './scenarios/register.ts';
+import { registerRoutes as registerPublicDemo } from './demo-public/register.ts';
 import { registerRoutes as registerMemory } from './memory/register.ts';
 import { registerRoutes as registerBlaxel } from './blaxel/register.ts';
 import { createInkboxClient } from './approvals/inkbox-client.ts';
@@ -137,6 +138,7 @@ registerInkbox(router, repo, { start: startCase });
 registerFeeds(router, repo, { start: startCase });
 registerMemory(router, repo);
 registerScenarios(router, repo, { start: startCase });
+registerPublicDemo(router, repo, { start: startCase });
 registerBlaxel(router, repo);
 
 // Says, from the environment as it really is, which components are real. Never returns secrets.
@@ -254,7 +256,8 @@ const server = createServer(async (req, res: ServerResponse) => {
     }
   }
 
-  if (!bearerOk(req.headers.authorization, process.env.AHD_API_TOKEN)) {
+  // Open to everyone only when AHD_PUBLIC_READ / AHD_PUBLIC_DEMO say so (see http-auth.ts); otherwise the key.
+  if (!openWithoutToken(req.method, url.pathname) && !bearerOk(req.headers.authorization, process.env.AHD_API_TOKEN)) {
     res.writeHead(401, { 'content-type': 'application/json', 'www-authenticate': 'Bearer' });
     res.end(JSON.stringify({ error: { code: 'unauthorized', message: 'missing or wrong bearer token', stage: 'http', request_id: requestId } }));
     return;

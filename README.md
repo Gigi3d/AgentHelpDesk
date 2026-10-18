@@ -54,6 +54,10 @@ Ledgerly's paid `GET /v1/premium/report` accepts a simulated x402 payment (test 
 
 The desk writes all state to `/app/data/cases.json`. Deploy mounts a Blaxel volume there when the plan allows one (Tier 0 does not) and otherwise falls back to a file backup. `persist restart` and `persist standby` check that cases and events survive; `persist wipe` deletes the sandbox, redeploys and checks the data came back.
 
+## Public by default
+
+A deployed desk is open to look at, and anyone can press **Run the full demo** (four failures, then a second agent) with no key. The run is capped: one at a time, a 60 s cooldown, 8 runs an hour, and old demo sandboxes are deleted first. Every other write (delete, approve, open cases, billing) needs the desk key; unlock at `/unlock`. `AHD_PRIVATE=1 demo/live.sh deploy` makes it private.
+
 ## Ways in
 
 - **Agents:** MCP, A2A or email through Inkbox (`demo/live.sh inkbox`).

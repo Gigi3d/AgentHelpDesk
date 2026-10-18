@@ -260,10 +260,11 @@ async function request<T>(method: 'GET' | 'POST' | 'DELETE', path: string, body?
   }
   if (!res.ok) {
     const envelope = asRecord(asRecord(parsed)?.['error']);
+    const needsKey = res.status === 401 && method !== 'GET';
     throw new ApiError(
       res.status,
       strOf(envelope?.['code']) ?? `http_${res.status}`,
-      strOf(envelope?.['message']) ?? (res.statusText || `HTTP ${res.status}`),
+      needsKey ? 'That action is admin only. Use Run the full demo, or unlock with the desk key at /unlock.' : strOf(envelope?.['message']) ?? (res.statusText || `HTTP ${res.status}`),
       strOf(envelope?.['stage']) ?? 'http',
       strOf(envelope?.['request_id']),
       res.headers.get('x-payment-required'),
@@ -902,3 +903,14 @@ export type ScenarioRun = {
 export type Scenario = { featured?: boolean; id: string; title: string; defect: string; sent: string; message: string; runs: ScenarioRun[] };
 export const getScenarios = () => request<{ scenarios: Scenario[] }>('GET', '/v1/scenarios');
 export const runScenarios = (agent: string, ids?: string[]) => request<{ started: { scenario: string; case_id: string }[] }>('POST', '/v1/scenarios/run', { agent, ids });
+
+export type PublicDemo = {
+  run: { id: string; phase: 'idle' | 'alpha' | 'beta' | 'done' | 'failed'; started_at: string; finished_at: string | null; cases: string[]; note: string } | null;
+  rows: ScenarioRun[];
+  can_run: boolean;
+  why: string | null;
+  runs_left: number;
+  wait_s: number;
+};
+export const getPublicDemo = () => request<PublicDemo>('GET', '/v1/public/demo');
+export const runPublicDemo = () => request<{ run: PublicDemo['run'] }>('POST', '/v1/public/demo/run', {});

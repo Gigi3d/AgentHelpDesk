@@ -2,15 +2,8 @@ import { Link } from 'react-router-dom';
 import { Code, JsonView } from '../components/Json';
 import { Logo } from '../components/Shell';
 import { Button, Card } from '../components/ui';
-import { HERO_ID, useStore } from '../lib/store';
 
 export default function Landing() {
-  const { tickets, live } = useStore();
-  // The recorded hero case is a fixture id. Live, the desk holds different cases, so this points
-  // at one it actually has — the one waiting on a human first — and at the list until the first
-  // poll lands, because a case id that does not exist opens a not-found page.
-  const heroCase = live.on ? tickets.find((t) => t.stage === 'awaiting_approval')?.id ?? tickets[0]?.id : HERO_ID;
-  const heroTo = heroCase ? `/app/tickets/${heroCase}` : '/app/tickets';
   return (
     <div className="min-h-screen bg-white text-ink">
       <header className="mx-auto flex h-16 max-w-[1120px] items-center justify-between px-4 md:px-6">
@@ -29,7 +22,7 @@ export default function Landing() {
           <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-muted">The desk reproduces the failure in a sandbox, proves a fix three ways, and gives the agent something it can run. Proven fixes ship on their own.</p>
           <div className="mt-7 flex flex-wrap gap-3">
             <Link to="/install"><Button variant="primary" size="lg">Start without GitHub</Button></Link>
-            <Link to={heroTo}><Button size="lg">See a live ticket</Button></Link>
+            <Link to="/app/scenarios"><Button size="lg">Run the live demo</Button></Link>
           </div>
           <p className="mt-4 text-[13px] text-muted">You pay only for a fix the agent then uses successfully. Four of five install paths need no GitHub.</p>
         </div>

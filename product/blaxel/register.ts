@@ -34,7 +34,7 @@ interface SandboxRow {
   region: string | null;
 }
 
-async function listSandboxes(): Promise<SandboxRow[]> {
+export async function listSandboxes(): Promise<SandboxRow[]> {
   const sdk = (await client.loadSdk()) as unknown as Record<string, unknown>;
   const si = rec(sdk['SandboxInstance']);
   const list = si['list'];
@@ -68,6 +68,26 @@ async function listSandboxes(): Promise<SandboxRow[]> {
   return rows.sort((a, b) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')));
 }
 
+/** Delete one ahd-* case sandbox (never the desk's own) and record it. Throws HttpError. */
+export async function deleteSandboxByName(repo: Repository, name: string, by: string): Promise<void> {
+  if (!name.startsWith('ahd-')) throw new HttpError(400, 'bad_request', 'only ahd-* sandboxes can be deleted here', 'blaxel.delete');
+  if (name === DESK()) throw new HttpError(400, 'bad_request', 'the desk sandbox cannot be deleted from the console', 'blaxel.delete');
+  if (!isReal()) throw new HttpError(400, 'bad_request', 'no Blaxel key on this desk', 'blaxel.delete');
+  const sdk = (await client.loadSdk()) as unknown as Record<string, unknown>;
+  const del = rec(sdk['SandboxInstance'])['delete'];
+  if (typeof del !== 'function') throw new HttpError(500, 'blaxel_delete_unavailable', 'SandboxInstance.delete is missing from the SDK', 'blaxel.delete');
+  const t0 = Date.now();
+  try {
+    await (del as (n: string) => Promise<unknown>).call(rec(sdk['SandboxInstance']), name);
+  } catch (err) {
+    throw new HttpError(502, 'blaxel_delete_failed', client.messageOf(err).slice(0, 300), 'blaxel.delete');
+  }
+  await repo.appendToolEvent({
+    id: `del-${name}-${t0}`, ticket_id: name.slice(4), stage: 'sandbox.destroy', tool: 'sandbox', action: 'destroy',
+    t_ms: t0, d_ms: Date.now() - t0, result: 'ok', payload: { sandbox: name, by }, at: new Date().toISOString(),
+  });
+}
+
 export function registerRoutes(router: Router, repo: Repository): void {
   router.add('GET', '/v1/blaxel/sandboxes', async (): Promise<HttpResult> => {
     const limit = Number(process.env['AHD_BLAXEL_STANDBY_LIMIT'] ?? 10);
@@ -83,24 +103,8 @@ export function registerRoutes(router: Router, repo: Repository): void {
   });
 
   router.add('POST', '/v1/blaxel/delete', async (ctx): Promise<HttpResult> => {
-    const name = String(rec(ctx.body)['name'] ?? '');
-    if (!name.startsWith('ahd-')) throw new HttpError(400, 'bad_request', 'only ahd-* sandboxes can be deleted here', 'blaxel.delete');
-    if (name === DESK()) throw new HttpError(400, 'bad_request', 'the desk sandbox cannot be deleted from the console', 'blaxel.delete');
-    if (!isReal()) throw new HttpError(400, 'bad_request', 'no Blaxel key on this desk', 'blaxel.delete');
-    const sdk = (await client.loadSdk()) as unknown as Record<string, unknown>;
-    const del = rec(sdk['SandboxInstance'])['delete'];
-    if (typeof del !== 'function') throw new HttpError(500, 'blaxel_delete_unavailable', 'SandboxInstance.delete is missing from the SDK', 'blaxel.delete');
-    const t0 = Date.now();
-    try {
-      await (del as (n: string) => Promise<unknown>).call(rec(sdk['SandboxInstance']), name);
-    } catch (err) {
-      throw new HttpError(502, 'blaxel_delete_failed', client.messageOf(err).slice(0, 300), 'blaxel.delete');
-    }
-    await repo.appendToolEvent({
-      id: `del-${name}-${t0}`, ticket_id: name.slice(4), stage: 'sandbox.destroy', tool: 'sandbox', action: 'destroy',
-      t_ms: t0, d_ms: Date.now() - t0, result: 'ok', payload: { sandbox: name, by: 'console' }, at: new Date().toISOString(),
-    });
-    return { status: 200, body: { deleted: name } };
+    await deleteSandboxByName(repo, String(rec(ctx.body)['name'] ?? ''), 'console');
+    return { status: 200, body: { deleted: String(rec(ctx.body)['name']) } };
   });
 
   router.add('GET', '/v1/blaxel/activity', async (): Promise<HttpResult> => {

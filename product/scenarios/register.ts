@@ -22,29 +22,64 @@ function codeOf(f: Failure): string | null {
   return typeof c === 'string' ? c : null;
 }
 
+export interface RunRow {
+  case_id: string;
+  scenario: string | null;
+  agent: string;
+  status: Failure['status'];
+  created_at: string;
+  ms: number | null;
+  memory_hit: boolean;
+  sandbox: string;
+  proofs: { replay: boolean; vendor_tests: boolean; fresh_agent: boolean } | null;
+  billable: boolean;
+}
+
+/** Every scenario case the desk holds, newest first, with proofs, timing and memory hits. */
+export async function runRows(repo: Repository): Promise<RunRow[]> {
+  const cases = (await repo.listFailures()).filter((f) => f.agent_id.startsWith('scn:'));
+  const hits = new Set((await repo.toolEvents({ action: 'resolver.memory_hit' })).map((e) => e.ticket_id));
+  const rows = await Promise.all(
+    cases.map(async (f): Promise<RunRow> => {
+      const [attempt, outcome, events] = await Promise.all([repo.latestAttempt(f.id), repo.getOutcome(f.id), repo.toolEvents({ ticket_id: f.id })]);
+      const last = events.reduce((m, e) => Math.max(m, Date.parse(e.at)), 0);
+      return {
+        case_id: f.id,
+        scenario: codeOf(f),
+        agent: f.agent_id.slice(4),
+        status: f.status,
+        created_at: f.created_at,
+        ms: last > 0 ? Math.max(0, last - Date.parse(f.created_at)) : null,
+        memory_hit: hits.has(f.id),
+        sandbox: sandboxName(f.id),
+        proofs: attempt ? { replay: attempt.proof_replay, vendor_tests: attempt.proof_vendor_tests, fresh_agent: attempt.proof_fresh_agent } : null,
+        billable: outcome ? outcome.billable === true : false,
+      };
+    }),
+  );
+  return rows.sort((x, y) => y.created_at.localeCompare(x.created_at));
+}
+
+/** File each scenario's failure as `agent` and start the loop in the background. */
+export async function startScenarios(repo: Repository, start: (id: string) => Promise<void>, ids: readonly string[], agent: string): Promise<{ scenario: string; case_id: string }[]> {
+  const picked = ids.map((id) => {
+    const s = scenarioById(id);
+    if (!s) throw new HttpError(400, 'bad_request', `unknown scenario '${id}'`, 'scenarios.run');
+    return s;
+  });
+  const stamp = Date.now().toString(36);
+  const started: { scenario: string; case_id: string }[] = [];
+  for (const s of picked) {
+    const f = await intake(reportFor(s, `scn:${agent}`, `scn-${s.id}-${agent}-${stamp}`), repo);
+    started.push({ scenario: s.id, case_id: f.id });
+    void start(f.id);
+  }
+  return started;
+}
+
 export function registerRoutes(router: Router, repo: Repository, deps: ScenarioDeps): void {
   router.add('GET', '/v1/scenarios', async (): Promise<HttpResult> => {
-    const cases = (await repo.listFailures()).filter((f) => f.agent_id.startsWith('scn:'));
-    const hits = new Set((await repo.toolEvents({ action: 'resolver.memory_hit' })).map((e) => e.ticket_id));
-    const rows = await Promise.all(
-      cases.map(async (f) => {
-        const [attempt, outcome, events] = await Promise.all([repo.latestAttempt(f.id), repo.getOutcome(f.id), repo.toolEvents({ ticket_id: f.id })]);
-        const last = events.reduce((m, e) => Math.max(m, Date.parse(e.at)), 0);
-        return {
-          case_id: f.id,
-          scenario: codeOf(f),
-          agent: f.agent_id.slice(4),
-          status: f.status,
-          created_at: f.created_at,
-          ms: last > 0 ? Math.max(0, last - Date.parse(f.created_at)) : null,
-          memory_hit: hits.has(f.id),
-          sandbox: sandboxName(f.id),
-          proofs: attempt ? { replay: attempt.proof_replay, vendor_tests: attempt.proof_vendor_tests, fresh_agent: attempt.proof_fresh_agent } : null,
-          billable: outcome ? outcome.billable === true : false,
-        };
-      }),
-    );
-    rows.sort((a, b) => b.created_at.localeCompare(a.created_at));
+    const rows = await runRows(repo);
     return { status: 200, body: { scenarios: SCENARIOS.map((s) => ({ ...s, runs: rows.filter((r) => r.scenario === s.id) })) } };
   });
 
@@ -52,18 +87,6 @@ export function registerRoutes(router: Router, repo: Repository, deps: ScenarioD
     const b = (typeof ctx.body === 'object' && ctx.body !== null ? ctx.body : {}) as Record<string, unknown>;
     const ids = Array.isArray(b['ids']) && b['ids'].length > 0 ? (b['ids'] as unknown[]).map(String) : [...DEFAULT_IDS];
     const agent = typeof b['agent'] === 'string' && /^[a-z0-9-]{1,32}$/.test(b['agent']) ? b['agent'] : 'alpha';
-    const picked = ids.map((id) => {
-      const s = scenarioById(id);
-      if (!s) throw new HttpError(400, 'bad_request', `unknown scenario '${id}'`, 'scenarios.run');
-      return s;
-    });
-    const stamp = Date.now().toString(36);
-    const started: { scenario: string; case_id: string }[] = [];
-    for (const s of picked) {
-      const f = await intake(reportFor(s, `scn:${agent}`, `scn-${s.id}-${agent}-${stamp}`), repo);
-      started.push({ scenario: s.id, case_id: f.id });
-      void deps.start(f.id);
-    }
-    return { status: 202, body: { started } };
+    return { status: 202, body: { started: await startScenarios(repo, deps.start, ids, agent) } };
   });
 }
