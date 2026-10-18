@@ -36,6 +36,7 @@ import { demoSeedRequested, seedDemo } from './demo-seed.ts';
 // Accept BL_API_KEY or BLAXEL_API_KEY before anything reads the sandbox key.
 normalizeBlaxelEnv();
 
+const STARTED_AT = new Date().toISOString();
 export const repo: Repository = withPersistence(new MemoryRepository(), process.env.AHD_DATA_FILE);
 
 const routes = new Map<string, Handler>();
@@ -133,6 +134,8 @@ registerInkbox(router, repo, { start: startCase });
 registerFeeds(router, repo, { start: startCase });
 
 // Says, from the environment as it really is, which components are real. Never returns secrets.
+// Blaxel's preview proxy answers /healthz itself, so the desk's own liveness and persistence facts live here.
+router.add('GET', '/v1/status', async () => ({ status: 200, body: { ok: true, started_at: STARTED_AT, pid: process.pid, persisted: Boolean(process.env['AHD_DATA_FILE']) } }));
 router.add('GET', '/v1/runtime', async () => ({ status: 200, body: runtimeReport() }));
 
 // Token-bucket rate limit per client IP so one runaway agent cannot melt the desk.
@@ -204,7 +207,6 @@ function readBody(req: IncomingMessage): Promise<unknown> {
 }
 
 // The built console. AHD_WEB_DIR wins; otherwise ../web/dist next to this file, if it exists.
-const STARTED_AT = new Date().toISOString();
 const WEB_ROOT: string | null = (() => {
   const dir = process.env.AHD_WEB_DIR ?? resolvePath(import.meta.dirname, '..', 'web', 'dist');
   return existsSync(resolvePath(dir, 'index.html')) ? resolvePath(dir) : null;

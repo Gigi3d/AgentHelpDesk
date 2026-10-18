@@ -52,15 +52,15 @@ async function api(method, path, body) {
   return { status: res.status, ok: res.ok, json };
 }
 async function health(tries = 40) {
-  const d = deploy();
+  // Not /healthz: Blaxel's preview proxy answers that itself. /v1/status is the desk's own answer.
   for (let i = 0; i < tries; i++) {
     try {
-      const r = await fetch(`${d.url.replace(/\/+$/, '')}/healthz`, { signal: AbortSignal.timeout(8000) });
-      if (r.ok) return await r.json();
+      const r = await api('GET', '/v1/status');
+      if (r.ok && r.json.started_at) return r.json;
     } catch { /* waking up */ }
     await new Promise((r) => setTimeout(r, 3000));
   }
-  die('the desk did not answer /healthz in time');
+  die('the desk did not answer /v1/status in time. If it is an older desk, run demo/live.sh deploy.');
 }
 const canon = (v) => JSON.stringify(v, (_k, x) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : 1))) : x));
 const sha = (v) => createHash('sha256').update(canon(v)).digest('hex');
@@ -69,7 +69,7 @@ const sha = (v) => createHash('sha256').update(canon(v)).digest('hex');
 async function record() {
   say('Recording: one real Ledgerly case on the hosted desk');
   const h = await health();
-  if (!h.persisted) die(`the desk reports persisted=${h.persisted} (healthz: ${JSON.stringify(h)}). Run: demo/live.sh persist diag`);
+  if (!h.persisted) die(`the desk reports persisted=${h.persisted} (status: ${JSON.stringify(h)}). Run: demo/live.sh persist diag`);
   const opened = await api('POST', '/v1/cases', {
     agent_id: 'agent-persist-check', task: 'List my ledger entries',
     request: { method: 'GET', url: 'https://api.ledgerly.test/v1/entries', headers: { 'x-api-key': 'redacted' } },
@@ -126,7 +126,7 @@ async function sdk() {
 const [mode = 'verify', arg] = process.argv.slice(2);
 if (mode === 'diag') {
   const h = await health();
-  say(`healthz: ${JSON.stringify(h)}`);
+  say(`status: ${JSON.stringify(h)}`);
   const { SandboxInstance } = await sdk();
   const sb = await SandboxInstance.get(deploy().sandbox || 'ahd-desk');
   const run = async (label, command) => {
@@ -149,13 +149,22 @@ if (mode === 'restart') {
   const { SandboxInstance } = await sdk();
   const sb = await SandboxInstance.get(deploy().sandbox || 'ahd-desk');
   say('\nRestarting the desk process inside the sandbox');
-  try { await sb.process.kill('desk'); } catch { /* may already be gone */ }
-  await new Promise((r) => setTimeout(r, 3000));
-  await sb.process.exec({
-    name: 'desk',
-    command: `bash -lc 'cd /app && set -a && . ./ahd.env && set +a && exec node --experimental-strip-types product/server.ts'`,
-    workingDir: '/app', waitForCompletion: false, keepAlive: true, restartOnFailure: true, maxRestarts: 20,
-  });
+  const before = JSON.parse(readFileSync(FP, 'utf8')).started_at;
+  // Kill the node process itself. The sandbox keeps the desk alive (keepAlive, restartOnFailure) and brings it back.
+  await sb.process.exec({ command: "pkill -f 'node.*product/server.ts' || true", waitForCompletion: true, timeout: 20 });
+  let back = false;
+  for (let i = 0; i < 20 && !back; i++) {
+    await new Promise((r) => setTimeout(r, 3000));
+    try { const r = await api('GET', '/v1/status'); back = r.ok && r.json.started_at && r.json.started_at !== before; } catch { /* restarting */ }
+  }
+  if (!back) {
+    say('The sandbox did not bring the desk back by itself; starting it by hand');
+    await sb.process.exec({
+      name: `desk-${Date.now()}`,
+      command: `bash -lc 'cd /app && set -a && . ./ahd.env && set +a && exec node --experimental-strip-types product/server.ts'`,
+      workingDir: '/app', waitForCompletion: false, keepAlive: true, restartOnFailure: true, maxRestarts: 20,
+    });
+  }
   process.exit((await verify('after a desk restart', { expectNewProcess: true })) ? 0 : 1);
 }
 
