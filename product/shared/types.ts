@@ -6,7 +6,7 @@
 // or constructor parameter properties. Use `import type` for type-only imports.
 // Import modules with an explicit `.ts` extension.
 
-export type Mode = 'auto' | 'approve_first' | 'suggest_only';
+export type Mode = 'auto' | 'approve_first' | 'suggest_only' | 'autonomous';
 export type FailureClass = 'knowledge' | 'code' | 'authority';
 export type CaseStage =
   | 'opened'

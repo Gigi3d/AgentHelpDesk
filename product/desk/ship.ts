@@ -173,7 +173,7 @@ export function prBodyFor(failure: Failure, draft: DraftFix, rows: readonly Proo
 export function mergeStateFor(gate: GateDecision, kind: ChangeKind, hasDiff: boolean): MergeState {
   if (!hasDiff) return 'skipped';
   if (gate.ship_to_vendor) {
-    return gate.risk_policy === 'auto' && isLowRisk(kind) ? 'auto_merge_on_green' : 'opened_for_review';
+    return gate.risk_policy === 'autonomous' || (gate.risk_policy === 'auto' && isLowRisk(kind)) ? 'auto_merge_on_green' : 'opened_for_review';
   }
   return gate.reason === 'suggest_only' ? 'draft_suggestion' : 'skipped';
 }

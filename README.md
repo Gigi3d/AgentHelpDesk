@@ -221,3 +221,7 @@ Cases come in three ways:
 - An agent over MCP, A2A or email (Inkbox). `demo/live.sh inkbox` subscribes the webhook at `/v1/inkbox/webhook`.
 - The `ahd` command: `ahd run -- <cmd>` or `ahd bl <args>` runs a command, spots agent-facing errors and files a case, keeping the exit code.
 - The Armature feed: `demo/live.sh armature` pulls issues from their MCP server (needs `ARMATURE_KEY`); field mapping is unconfirmed until a real response is seen.
+
+## No human in the loop
+
+The live Ledgerly vendor now runs in `autonomous` mode: when replay, vendor tests and the fresh-agent proof are all green, the fix ships and the agent retries with no approval step. A failed proof still holds the change and nothing is billed. To bring the human gate back, set `AHD_RISK_POLICY=approve_first` before `demo/live.sh deploy`.

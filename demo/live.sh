@@ -29,7 +29,7 @@ export AHD_REPRO_COMMAND='node /ahd/replay.mjs'
 export AHD_REPRO_EXPECT=nonzero
 CONTACT="${AHD_APPROVALS_FALLBACK_EMAIL:-you@example.com}"
 export AHD_APPROVALS_FALLBACK_EMAIL="$CONTACT"
-export AHD_VENDOR_JSON="{\"id\":\"ledgerly\",\"name\":\"Ledgerly\",\"risk_policy\":\"approve_first\",\"report_contacts\":[\"$CONTACT\"],\"test_command\":\"cd /ahd/work && node --test test/*.test.mjs\",\"stripe_customer_id\":\"${STRIPE_TEST_CUSTOMER_ID:-}\",\"payer_mode\":\"vendor\"}"
+export AHD_VENDOR_JSON="{\"id\":\"ledgerly\",\"name\":\"Ledgerly\",\"risk_policy\":\"${AHD_RISK_POLICY:-autonomous}\",\"report_contacts\":[\"$CONTACT\"],\"test_command\":\"cd /ahd/work && node --test test/*.test.mjs\",\"stripe_customer_id\":\"${STRIPE_TEST_CUSTOMER_ID:-}\",\"payer_mode\":\"vendor\"}"
 export AHD_DESK_URL="http://127.0.0.1:${PORT:-8787}"
 
 case "${1:-check}" in

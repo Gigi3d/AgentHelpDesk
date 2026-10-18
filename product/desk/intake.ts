@@ -43,7 +43,7 @@ export function defaultVendorId(): string {
 
 function defaultRiskPolicy(): Mode {
   const raw = (process.env['AHD_DEFAULT_RISK_POLICY'] ?? 'auto').toLowerCase();
-  return raw === 'approve_first' || raw === 'suggest_only' ? raw : 'auto';
+  return raw === 'approve_first' || raw === 'suggest_only' || raw === 'autonomous' ? raw : 'auto';
 }
 
 /** Used when the vendor row has not been seeded yet, so the loop still runs

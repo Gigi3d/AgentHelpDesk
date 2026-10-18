@@ -12,7 +12,7 @@ export type Stage =
   | 'escalated';
 
 export type FailureClass = 'knowledge' | 'code' | 'authority';
-export type Mode = 'auto' | 'approve_first' | 'suggest_only';
+export type Mode = 'auto' | 'approve_first' | 'suggest_only' | 'autonomous';
 export type ProofStatus = 'pending' | 'running' | 'passed' | 'failed' | 'skipped';
 
 export interface Proof {

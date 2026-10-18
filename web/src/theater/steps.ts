@@ -50,7 +50,7 @@ export const DEFS: Def[] = [
   { key: 'replay', title: 'Replay the call on the fix', caption: 'The same call, against the fixed files. It must now succeed.', actions: ['proof.replay'] },
   { key: 'tests', title: 'Run the vendor’s own tests', caption: 'The vendor’s test suite runs in the sandbox. A fix that breaks it does not ship.', actions: ['proof.vendor_tests'] },
   { key: 'fresh', title: 'A fresh agent tries from the docs', caption: 'A clean copy of the sandbox and an agent that sees only the task and the fixed docs.', actions: ['proof.fresh_agent'] },
-  { key: 'approval', title: 'A person approves', caption: 'Riskier changes wait here for one reply from the vendor’s approver.', actions: ['approval.decided', 'approval.requested', 'gate.auto_green'] },
+  { key: 'approval', title: 'Gate', caption: 'Autonomous vendors ship on three green proofs. Others wait here for one reply from the approver.', actions: ['approval.decided', 'approval.requested', 'gate.auto_green'] },
   { key: 'ship', title: 'Ship the fix', caption: 'The agent gets the verified answer. The vendor gets a PR note and a regression test.', actions: ['ship.emitted', 'case.resolved'] },
   { key: 'retry', title: 'The agent retries', caption: 'The agent runs its original call again with the fix applied. This is the real test.', actions: [] },
   { key: 'bill', title: 'Bill only if it worked', caption: 'One Stripe meter event, only when all three proofs passed and the retry succeeded.', actions: ['meter_event.created', 'mpp.settled', 'billing.not_billable', 'billing.exempt'] },
@@ -79,7 +79,7 @@ export function deriveSteps(c: CaseLike): Step[] {
         state = 'failed';
         note = 'The approver said no.';
       }
-      if (ev?.action === 'gate.auto_green') note = 'Safe change, no approval needed.';
+      if (ev?.action === 'gate.auto_green') note = 'Three proofs green, no human needed. Shipped by the agent.';
     }
     if (d.key === 'retry') {
       const ok = c.outcome?.agent_retry_ok;

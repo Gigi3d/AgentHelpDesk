@@ -101,6 +101,7 @@ function Modes() {
   const [def, setDef] = useState<Mode>(config.mode_default as Mode);
   const rows: [Mode, string, string, string][] = [
     ['auto', 'Docs and error text changes that pass all three proofs', 'Anything touching code or schema', 'Docs and error text only'],
+    ['autonomous', 'Anything that passes all three proofs', 'Nothing, no human in the loop', 'Nothing'],
     ['approve_first', 'Nothing', 'Code and schema changes, sent as a text message', 'New accounts and code changes'],
     ['suggest_only', 'Nothing', 'Every fix, shown as a draft you apply', 'Sensitive endpoints, such as payments'],
   ];

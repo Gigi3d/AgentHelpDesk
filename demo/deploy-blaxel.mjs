@@ -119,7 +119,7 @@ say('   dependencies installed');
 //    and (without the dotenv package) keeps the quotes, which turned a valid key into a 401.
 const keep = ['BL_API_KEY', 'BL_WORKSPACE', 'BL_REGION', 'ANTHROPIC_API_KEY', 'STRIPE_SECRET_KEY', 'STRIPE_TEST_CUSTOMER_ID', 'INKBOX_API_KEY', 'ARMATURE_KEY', 'AHD_APPROVALS_FALLBACK_EMAIL'];
 const contact = env.AHD_APPROVALS_FALLBACK_EMAIL || 'you@example.com';
-const vendor = { id: 'ledgerly', name: 'Ledgerly', risk_policy: 'approve_first', report_contacts: [contact], test_command: 'cd /ahd/work && node --test test/*.test.mjs', stripe_customer_id: env.STRIPE_TEST_CUSTOMER_ID || '', payer_mode: 'vendor' };
+const vendor = { id: 'ledgerly', name: 'Ledgerly', risk_policy: env.AHD_RISK_POLICY || 'autonomous', report_contacts: [contact], test_command: 'cd /ahd/work && node --test test/*.test.mjs', stripe_customer_id: env.STRIPE_TEST_CUSTOMER_ID || '', payer_mode: 'vendor' };
 const lines = keep.filter((k) => env[k]).map((k) => `${k}=${JSON.stringify(env[k])}`);
 lines.push(
   `BLAXEL_API_KEY=${JSON.stringify(env.BL_API_KEY)}`,

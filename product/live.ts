@@ -10,7 +10,7 @@ import type { Repository } from './store/repository.ts';
 import { makeClaudeResolver } from './desk/resolver-claude.ts';
 import { makeProvisioner } from './sandbox/provision.ts';
 
-const MODES: readonly Mode[] = ['auto', 'approve_first', 'suggest_only'];
+const MODES: readonly Mode[] = ['auto', 'approve_first', 'suggest_only', 'autonomous'];
 
 /** Blaxel's SDK documents BL_API_KEY / BL_WORKSPACE; this repo's client checks BLAXEL_API_KEY.
  * Accept either name and make both visible so neither layer rejects a valid key. */

@@ -599,7 +599,7 @@ function modeOf(v: CaseParts): Mode {
   if (v.vendor) return v.vendor.risk_policy;
   for (const e of v.events) {
     const raw = asRecord(e.payload)?.['risk_policy'];
-    if (raw === 'auto' || raw === 'approve_first' || raw === 'suggest_only') return raw;
+    if (raw === 'auto' || raw === 'approve_first' || raw === 'suggest_only' || raw === 'autonomous') return raw;
   }
   // intake's fallback vendor runs on AHD_DEFAULT_RISK_POLICY, which defaults to auto.
   return 'auto';
@@ -608,7 +608,7 @@ function modeOf(v: CaseParts): Mode {
 /** Mirrors gate.gateWouldNeedApproval: low risk is exactly what the desk would
  * ship without a human, so the console's bulk-approve gate matches the backend's. */
 function riskOf(mode: Mode, kind: Ticket['change_type']): Ticket['risk'] {
-  const needsHuman = mode === 'approve_first' ? true : mode === 'suggest_only' ? false : !(kind === 'docs' || kind === 'error_text');
+  const needsHuman = mode === 'approve_first' ? true : mode === 'suggest_only' || mode === 'autonomous' ? false : !(kind === 'docs' || kind === 'error_text');
   if (!needsHuman) return 'low';
   return kind === 'grant' ? 'high' : 'medium';
 }
