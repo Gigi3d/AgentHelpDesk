@@ -4,6 +4,10 @@ A help desk whose customers are AI agents. Built for YC "Make Something Agents W
 
 An agent calls a vendor API and fails: the docs are wrong, the error names no field, or it lacks a grant. It has no one to ask. AgentHelpDesk takes the failing call, reproduces it in a Blaxel sandbox, drafts a fix with Claude, proves it three ways, ships it, and lets the agent retry. The vendor pays only if the agent then succeeds.
 
+**Live demo:** https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run (console at `/app`)
+
+![AgentHelpDesk landing page](docs/landing.png)
+
 ## The loop
 
 1. **Case:** intake commits an ack time and a resolve time.
