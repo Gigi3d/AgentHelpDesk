@@ -1,3 +1,4 @@
+import { WakeDesk } from './WakeDesk';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { agents, HERO_ID, useStore } from '../lib/store';
@@ -253,6 +254,7 @@ export function TestModeBanner() {
         <span className="ml-1 flex items-center gap-1.5 rounded bg-white/70 px-1.5 py-0.5 text-[11px] font-semibold" title={`Reading cases and events from ${live.url}`}>
           <i className={cx('h-1.5 w-1.5 rounded-full', live.state === 'open' ? 'bg-success' : live.state === 'error' ? 'bg-error' : 'bg-muted')} />
           LIVE · {live.state === 'error' ? `cannot reach ${live.url}` : live.url}
+          {live.state === 'error' && <WakeDesk compact />}
         </span>
       )}
     </div>
@@ -276,7 +278,8 @@ function LiveGate() {
           </>
         )}
       </p>
-      <a href={`${import.meta.env.BASE_URL}app`} className="mt-5 inline-flex h-9 items-center rounded-ctl border border-line bg-white px-4 text-[14px] font-medium text-ink hover:bg-surface">Reload the console</a>
+      {!connecting && <WakeDesk />}
+      <a href={`${import.meta.env.BASE_URL}app`} className="mt-4 inline-flex h-9 items-center rounded-ctl border border-line bg-white px-4 text-[14px] font-medium text-ink hover:bg-surface">Reload the console</a>
     </div>
   );
 }
