@@ -67,6 +67,11 @@ A deployed desk is open to look at, and anyone can press **Run the full demo** (
 ## Ways in
 
 - **Agents:** MCP, A2A or email through Inkbox (`demo/live.sh inkbox`).
+
+  Proof it works: the desk emails the agent's owner when a case is fixed and verified, with the change, the three proofs and a link to the case.
+
+  ![Inkbox email: case fixed and verified](docs/inkbox-email.png)
+
 - **CLI:** `ahd run -- <cmd>` files a case when a command fails like an agent error.
 - **Armature:** `demo/live.sh armature` pulls issues (needs `ARMATURE_KEY`; without it, labelled samples).
 
