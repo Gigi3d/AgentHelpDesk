@@ -16,6 +16,24 @@ import type { FailureClass, Grant, HttpExchange, Mode, Proof, ProofStatus, Stage
 
 export const API_BASE = (((import.meta.env.VITE_API_URL as string | undefined) ?? 'http://127.0.0.1:8787')).replace(/\/+$/, '');
 
+/* ---------------- desk key ---------------- */
+const TOKEN_KEY = 'ahd_desk_token';
+export const getToken = (): string => {
+  try {
+    return localStorage.getItem(TOKEN_KEY) ?? '';
+  } catch {
+    return '';
+  }
+};
+export const setToken = (t: string): void => {
+  try {
+    if (t) localStorage.setItem(TOKEN_KEY, t);
+    else localStorage.removeItem(TOKEN_KEY);
+  } catch {
+    /* storage can be blocked; the gate then asks again on every load */
+  }
+};
+
 /* ---------------- backend shapes (product/shared/types.ts, product/desk/register.ts) ---------------- */
 
 export type CaseStage =
@@ -222,7 +240,10 @@ async function request<T>(method: 'GET' | 'POST' | 'DELETE', path: string, body?
   try {
     res = await fetch(`${API_BASE}${path}`, {
       method,
-      headers: body === undefined ? undefined : { 'content-type': 'application/json' },
+      headers: {
+        ...(body === undefined ? {} : { 'content-type': 'application/json' }),
+        ...(getToken() ? { authorization: `Bearer ${getToken()}` } : {}),
+      },
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch (err) {

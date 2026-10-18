@@ -119,7 +119,7 @@ export function runtimeReport(env: NodeJS.ProcessEnv = process.env): { all_real:
     {
       name: 'fresh_agent',
       real: sandboxReal && hasAnthropic && !proofsFake && Boolean(env['AHD_PROVISION_DIR']),
-      detail: 'a clean-context Claude call made from a forked sandbox',
+      detail: 'a clean-context Claude call made in a clean sandbox copy',
     },
     {
       name: 'billing',

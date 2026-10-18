@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:desk": "VITE_LIVE=1 VITE_API_URL= tsc --noEmit && VITE_LIVE=1 VITE_API_URL= vite build",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },

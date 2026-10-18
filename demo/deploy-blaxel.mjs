@@ -63,6 +63,19 @@ const tgz = join(dir, 'ahd.tgz');
 execFileSync('tar', ['-czf', tgz, '--exclude=node_modules', '--exclude=.git', '--exclude=.env*', '--exclude=dist', '--exclude=.mcp-use', '-C', ROOT, 'product', 'demo/sandbox-root', 'mcp'], { stdio: 'inherit' });
 say(`1. Packaged code (${(readFileSync(tgz).length / 1024).toFixed(0)} KB)`);
 
+// 1b. The console. Built here (live mode, same origin as the desk) and served by the desk itself,
+//     so the whole product is one URL. AHD_SKIP_WEB=1 deploys the API only.
+let webTgz = null;
+const WEB = join(ROOT, 'web');
+if (existsSync(join(WEB, 'package.json')) && env.AHD_SKIP_WEB !== '1') {
+  const opts = { cwd: WEB, stdio: 'inherit' };
+  if (!existsSync(join(WEB, 'node_modules'))) execFileSync('npm', ['ci', '--silent'], opts);
+  execFileSync('npm', ['run', 'build:desk', '--silent'], opts);
+  webTgz = join(dir, 'web.tgz');
+  execFileSync('tar', ['-czf', webTgz, '-C', ROOT, 'web/dist'], { stdio: 'inherit' });
+  say(`   console built (${(readFileSync(webTgz).length / 1024).toFixed(0)} KB)`);
+}
+
 // 2. Sandbox.
 const sb = await SandboxInstance.createIfNotExists({
   name: NAME,
@@ -91,6 +104,11 @@ try { await sb.process.kill('desk'); } catch { /* not running */ }
 await sh('mkdir -p /app');
 await sb.fs.writeBinary('/app/ahd.tgz', readFileSync(tgz));
 await sh('cd /app && tar -xzf ahd.tgz && rm ahd.tgz');
+if (webTgz) {
+  await sh('rm -rf /app/web/dist && mkdir -p /app/web');
+  await sb.fs.writeBinary('/app/web.tgz', readFileSync(webTgz));
+  await sh('cd /app && tar -xzf web.tgz && rm web.tgz');
+}
 say('4. Code uploaded');
 const inst = await sb.process.exec({ command: 'cd /app/product && npm i --no-save @blaxel/core', name: 'npm-install', waitForCompletion: true, timeout: 55 });
 if (inst.exitCode && inst.exitCode !== 0) die(`npm install failed:\n${inst.logs ?? ''}`);
@@ -182,6 +200,7 @@ writeFileSync(TOKEN_FILE, JSON.stringify({ url, token: TOKEN, sandbox: NAME, edg
 chmodSync(TOKEN_FILE, 0o600);
 say(healthy ? '8. /healthz is up' : '8. /healthz did not answer in 60s. Check the process logs: bl or the console, sandbox ' + NAME);
 say('');
+say(`Console     ${url}/theater   (open it, paste the key: it is the token in demo/.deploy.json)`);
 say(`Desk URL   ${url}`);
 say(`Token      saved in demo/.deploy.json (gitignored); set AHD_DESK_TOKEN to it on the MCP edge`);
 say(`Claude connector URL  ${edgeUrl}/mcp   (Settings, Connectors, Add custom connector)`);

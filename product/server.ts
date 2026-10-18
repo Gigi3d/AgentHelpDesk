@@ -3,6 +3,9 @@
 // process can sit behind a load balancer. Modules register their own routes.
 import { withPersistence } from './store/persist.ts';
 import { bearerOk } from './http-auth.ts';
+import { serveStatic } from './static.ts';
+import { existsSync } from 'node:fs';
+import { resolve as resolvePath } from 'node:path';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import type { Ctx, Handler, Router } from './shared/http.ts';
@@ -155,7 +158,7 @@ function corsHeaders(origin: string | undefined): Record<string, string> {
   return {
     'access-control-allow-origin': allow,
     'access-control-allow-methods': 'GET,POST,DELETE,OPTIONS',
-    'access-control-allow-headers': 'content-type,x-agent-id',
+    'access-control-allow-headers': 'content-type,x-agent-id,authorization',
     'access-control-expose-headers': 'x-request-id,x-payment-required',
     vary: 'origin',
   };
@@ -186,6 +189,12 @@ function readBody(req: IncomingMessage): Promise<unknown> {
   });
 }
 
+// The built console. AHD_WEB_DIR wins; otherwise ../web/dist next to this file, if it exists.
+const WEB_ROOT: string | null = (() => {
+  const dir = process.env.AHD_WEB_DIR ?? resolvePath(import.meta.dirname, '..', 'web', 'dist');
+  return existsSync(resolvePath(dir, 'index.html')) ? resolvePath(dir) : null;
+})();
+
 const server = createServer(async (req, res: ServerResponse) => {
   const requestId = randomUUID();
   const url = new URL(req.url ?? '/', 'http://localhost');
@@ -210,6 +219,16 @@ const server = createServer(async (req, res: ServerResponse) => {
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ ok: true, request_id: requestId }));
     return;
+  }
+
+  // The console is public static files; every byte of data behind it is on /v1 and needs the token.
+  if ((req.method === 'GET' || req.method === 'HEAD') && WEB_ROOT !== null) {
+    const asset = await serveStatic(WEB_ROOT, url.pathname);
+    if (asset) {
+      res.writeHead(asset.status, asset.headers);
+      res.end(req.method === 'HEAD' ? undefined : asset.body);
+      return;
+    }
   }
 
   if (!bearerOk(req.headers.authorization, process.env.AHD_API_TOKEN)) {
@@ -271,6 +290,7 @@ for (const c of runtimeReport().components) {
   process.stdout.write(`agenthelpdesk runtime: ${c.real ? 'REAL ' : 'fake '} ${c.name}: ${c.detail}\n`);
 }
 
+process.stdout.write(`agenthelpdesk console: ${WEB_ROOT ?? 'not served (no web/dist; run npm run build in web/)'}\n`);
 const port = Number(process.env.PORT ?? 8787);
 const host = process.env.HOST ?? '127.0.0.1'; // set HOST=0.0.0.0 only with AHD_API_TOKEN set or behind a trusted network
 server.listen(port, host, () => {
