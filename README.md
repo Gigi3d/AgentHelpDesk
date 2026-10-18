@@ -4,7 +4,7 @@ A help desk whose customers are AI agents. Built for YC "Make Something Agents W
 
 An agent calls a vendor API and fails: the docs are wrong, the error names no field, or it lacks a grant. It has no one to ask. AgentHelpDesk takes the failing call, reproduces it in a Blaxel sandbox, drafts a fix with Claude, proves it three ways, ships it, and lets the agent retry. The vendor pays only if the agent then succeeds.
 
-**Live demo:** https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run (console at `/app`)
+**Live demo:** https://gigi3d.github.io/AgentHelpDesk/ (console at `/app`). The page is hosted on GitHub Pages and talks to the desk running on Blaxel (https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run).
 
 ![AgentHelpDesk landing page](docs/landing.png)
 
@@ -108,22 +108,22 @@ All on the live desk. Reads are public; actions that change state need the desk 
 
 | Page | What it shows |
 | --- | --- |
-| [Landing](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/) | What the product is |
-| [Console home](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app) | Cases, proofs and billing at a glance |
-| [x402 scenarios](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/scenarios) | Run the simulated payment failures |
-| [Case Theater](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/theater) | Watch one case run step by step |
-| [Fix memory](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/memory) | Proven fixes reused on repeat failures |
-| [Blaxel](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/blaxel) | Live sandboxes, state and activity |
-| [Armature](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/armature) | Open issues from the MCP server |
-| [Tickets](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/tickets) | Every case and its stage |
-| [Agents](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/agents) | Which agents reported what |
-| [Reports](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/reports) | Vendor reports |
-| [Billing](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/billing) | Stripe test-mode meter events |
-| [Settings](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/settings) | Vendor mode and risk policy |
-| [Endpoints](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/endpoints) | What agents call |
-| [Agent view](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/agents) | What a failing agent sees |
-| [Install flow](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/install) | Five ways to connect a vendor |
-| [Staff ops](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/staff) | Ops view |
+| [Landing](https://gigi3d.github.io/AgentHelpDesk/) | What the product is |
+| [Console home](https://gigi3d.github.io/AgentHelpDesk/app) | Cases, proofs and billing at a glance |
+| [x402 scenarios](https://gigi3d.github.io/AgentHelpDesk/app/scenarios) | Run the simulated payment failures |
+| [Case Theater](https://gigi3d.github.io/AgentHelpDesk/app/theater) | Watch one case run step by step |
+| [Fix memory](https://gigi3d.github.io/AgentHelpDesk/app/memory) | Proven fixes reused on repeat failures |
+| [Blaxel](https://gigi3d.github.io/AgentHelpDesk/app/blaxel) | Live sandboxes, state and activity |
+| [Armature](https://gigi3d.github.io/AgentHelpDesk/app/armature) | Open issues from the MCP server |
+| [Tickets](https://gigi3d.github.io/AgentHelpDesk/app/tickets) | Every case and its stage |
+| [Agents](https://gigi3d.github.io/AgentHelpDesk/app/agents) | Which agents reported what |
+| [Reports](https://gigi3d.github.io/AgentHelpDesk/app/reports) | Vendor reports |
+| [Billing](https://gigi3d.github.io/AgentHelpDesk/app/billing) | Stripe test-mode meter events |
+| [Settings](https://gigi3d.github.io/AgentHelpDesk/app/settings) | Vendor mode and risk policy |
+| [Endpoints](https://gigi3d.github.io/AgentHelpDesk/app/endpoints) | What agents call |
+| [Agent view](https://gigi3d.github.io/AgentHelpDesk/agents) | What a failing agent sees |
+| [Install flow](https://gigi3d.github.io/AgentHelpDesk/install) | Five ways to connect a vendor |
+| [Staff ops](https://gigi3d.github.io/AgentHelpDesk/staff) | Ops view |
 
 ## Sponsor docs
 
