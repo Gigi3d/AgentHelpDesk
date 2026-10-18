@@ -10,7 +10,7 @@ export const TILE: Record<SandboxKind, string> = {
   closed: 'bg-success/35 border-success/60',
   escalated: 'bg-error border-error',
   working: 'bg-warning border-warning animate-pulse',
-  other: 'bg-line border-line',
+  other: 'bg-blue/25 border-blue/50',
 };
 
 export const WORD: Record<SandboxKind, string> = {
@@ -19,7 +19,7 @@ export const WORD: Record<SandboxKind, string> = {
   closed: 'finished case',
   escalated: 'escalated case',
   working: 'case in progress',
-  other: 'not in this desk’s records',
+  other: 'earlier test sandbox (this desk has no record of it)',
 };
 
 export function kindFor(s: BlaxelSandbox, status: Record<string, string>, remembered: Set<string>): SandboxKind {
