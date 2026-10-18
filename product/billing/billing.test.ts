@@ -735,3 +735,24 @@ test('billing: the meter lane needs a Stripe customer, and a meter event can be 
   assert.equal(missingReason.code, 'missing_reason');
   assert.equal(missingReason.stage, 'billing.meter.cancel');
 });
+
+test('LiveStripeClient: a meter event response without an id still succeeds (Stripe echoes identifier)', async () => {
+  const { LiveStripeClient } = await import('./stripe-client.ts');
+  const realFetch = globalThis.fetch;
+  const seen: { url: string; body: string }[] = [];
+  globalThis.fetch = (async (url: string, init?: { body?: string }) => {
+    seen.push({ url: String(url), body: String(init?.body ?? '') });
+    return new Response(JSON.stringify({ object: 'billing.meter_event', identifier: 'out_1', event_name: 'ahd_verified_fix', livemode: false }), { status: 200 });
+  }) as typeof fetch;
+  try {
+    const c = new LiveStripeClient('sk_test_x');
+    const ev = await c.emitMeterEvent({ eventName: 'ahd_verified_fix', identifier: 'out_1', customerId: 'cus_1', value: 1 });
+    assert.equal(ev.id, 'out_1');
+    await c.cancelMeterEvent('out_1');
+    assert.match(seen[1]!.url, /meter_event_adjustments$/);
+    assert.match(seen[1]!.body, /cancel%5Bidentifier%5D=out_1/);
+    assert.match(seen[1]!.body, /type=cancel/);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+});

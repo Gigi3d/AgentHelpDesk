@@ -94,7 +94,7 @@ placeholders in tests are obvious fakes (`cus_demo_ledgerly`, `spt_demo_token_1`
   https://docs.stripe.com/api/billing/meter-event/create
 - **The Meter Event object / Meter object** — `identifier` is the idempotency key; meters use **count** aggregation.
   https://docs.stripe.com/api/billing/meter-event/object · https://docs.stripe.com/api/billing/meter/object
-- **Usage-based billing / meters guide** — a meter event can be **cancelled within 24 hours**, which is how a retry that later failed gets refunded (`POST /v1/billing/meter-events/cancel`, implemented over `stripe.billing.meter_events.deactivate`; confirm the path against your pinned API version before live mode).
+- **Usage-based billing / meters guide** — a meter event can be **cancelled within 24 hours**, which is how a retry that later failed gets refunded (`POST /v1/billing/meter_event_adjustments` with `type=cancel`; confirmed against the docs, not yet exercised live).
   https://docs.stripe.com/billing/subscriptions/usage-based
 - **Stripe MPP quickstart** — HTTP 402 with a payment requirement; cards via **Shared Payment Tokens, $0.50 minimum**; **USDC $0.01 minimum**; the server is a short `mppx` + `stripe` handler tested with `npx mppx@latest validate` (**not run here** — AGENTS.md forbids node/npm/npx on this machine); the setup uses the `2026-07-29.preview` API version for the business profile and the Tempo deposit address.
   https://docs.stripe.com (Machine Payments Protocol quickstart) · Stripe's hackathon primer, shipbysundown.dev

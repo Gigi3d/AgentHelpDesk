@@ -14,7 +14,7 @@
 //   * A meter event can be cancelled within 24 hours of creation — that is the escape hatch
 //     when a retry later turns out to have failed. The Node SDK call is
 //     `stripe.billing.meter_events.deactivate`; the REST path used below is
-//     POST /v1/billing/meter_events/deactivate with `identifier`. Confirm that path against
+//     POST /v1/billing/meter_event_adjustments with type=cancel and cancel[identifier]. Confirm that path against
 //     your account's pinned API version before enabling live mode: offline this method is
 //     only ever exercised by FakeStripeClient, and against the real API it fails loud on a
 //     non-2xx instead of pretending the cancellation happened.
@@ -184,10 +184,14 @@ export class LiveStripeClient implements StripeBillingClient {
       'payload[value]': String(input.value),
     });
     const body = await this.post('/billing/meter_events', form, 'billing.stripe.emit');
-    const id = typeof body['id'] === 'string' ? body['id'] : '';
-    if (id === '') {
-      throw new HttpError(502, 'stripe_bad_response', 'meter event response had no id', 'billing.stripe.emit');
-    }
+    // Stripe's billing.meter_event object has no `id`; it echoes the `identifier` we sent. The call
+    // succeeded (res.ok above), so fall back to that identifier rather than failing a paid outcome.
+    const id =
+      typeof body['id'] === 'string' && body['id'] !== ''
+        ? body['id']
+        : typeof body['identifier'] === 'string' && body['identifier'] !== ''
+          ? body['identifier']
+          : input.identifier;
     return {
       id,
       identifier: input.identifier,
@@ -204,7 +208,11 @@ export class LiveStripeClient implements StripeBillingClient {
       throw new HttpError(400, 'bad_meter_cancel', 'identifier must be a non-empty string', 'billing.stripe.cancel');
     }
     // Cancellable within 24h of creation (see the header comment).
-    await this.post('/billing/meter_events/deactivate', new URLSearchParams({ identifier }), 'billing.stripe.cancel');
+    await this.post(
+      '/billing/meter_event_adjustments',
+      new URLSearchParams({ event_name: meterEventName(), type: 'cancel', 'cancel[identifier]': identifier }),
+      'billing.stripe.cancel',
+    );
     return { identifier, cancelled: true, mode: this.mode, at: new Date().toISOString() };
   }
 }
