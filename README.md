@@ -21,6 +21,45 @@ An agent calls a vendor API and fails: the docs are wrong, the error names no fi
 5. **Ship:** with the vendor in `autonomous` mode, three green proofs ship with no human. Other modes (`auto`, `approve_first`, `suggest_only`) hold for a reply.
 6. **Bill:** one Stripe meter event, only if all three proofs passed and the agent's retry worked.
 
+## How it fits together
+
+```mermaid
+flowchart LR
+  A["Agent fails on a vendor API"] -->|"MCP (Manufact) or email, A2A (Inkbox)"| D["Desk intake: ack_by, resolve_by<br/>runs on Blaxel"]
+  R["Armature open issues"] -->|"list_issues, get_session"| D
+  D --> M{"Fix memory:<br/>seen before?"}
+  M -->|miss| S["Case sandbox ahd-caseId<br/>Blaxel replays the call"]
+  S --> C["Claude resolver<br/>drafts the fix"]
+  C --> P
+  M -->|"hit, no model call"| P
+  subgraph P["Three proofs in clean sandbox copies"]
+    P1["Replay"]
+    P2["Vendor tests"]
+    P3["Fresh agent<br/>clean-context Claude"]
+  end
+  P --> G{"All green?"}
+  G -->|yes| SH["Ship: answer, docs fix, PR or grant"]
+  G -->|"any red"| E["Escalate to a person<br/>Inkbox email"]
+  SH --> RT["Agent retries"]
+  RT -->|report_retry_result| O["Desk records the retry"]
+  O --> B["Stripe meter event<br/>test mode, only on success"]
+  B --> I["Inkbox email: fixed and verified"]
+  I --> FM["Fix memory updated"]
+  style C fill:#e1f1f8,stroke:#0b6e99
+  style P3 fill:#e1f1f8,stroke:#0b6e99
+```
+
+| Sponsor | What it does here | Tools used |
+|---|---|---|
+| Claude (Anthropic) | The resolver. Reads the vendor's files and drafts the fix. A second, clean-context call is the fresh-agent proof. | Messages API |
+| Blaxel | Hosts the desk and gives every case its own sandbox. Keeps state across restarts. | `@blaxel/core`, sandbox per case, volume `ahd-data`, per-minute schedule, standby and wake, preview URL |
+| Stripe | Bills only on success. Test mode, nothing is charged. | billing meter events, test customer, seed scripts |
+| Inkbox | Takes failures by email or agent-to-agent, sends the "fixed and verified" email, asks a person on escalation. | email send and reply, A2A tasks, agent identity |
+| Manufact | The MCP server agents call. It keeps no case state. | `mcp-use`, `report_problem`, `report_retry_result` |
+| Armature | Its open issues become cases. Its eval also runs our two tools end to end. | `list_issues`, `get_session`, eval run |
+
+Also used: GitHub Pages for the always-on front door, GitHub Actions to deploy the desk and bring it back if it restarts.
+
 ## Console
 
 One console at `<url>/app`:
