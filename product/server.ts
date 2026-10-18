@@ -1,6 +1,7 @@
 // AgentHelpDesk backend entrypoint. Dependency-free (node:http only).
 // Stateless by design: all state lives in the Repository, so N copies of this
 // process can sit behind a load balancer. Modules register their own routes.
+import { bearerOk } from './http-auth.ts';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import type { Ctx, Handler, Router } from './shared/http.ts';
@@ -212,6 +213,12 @@ const server = createServer(async (req, res: ServerResponse) => {
     return;
   }
 
+  if (!bearerOk(req.headers.authorization, process.env.AHD_API_TOKEN)) {
+    res.writeHead(401, { 'content-type': 'application/json', 'www-authenticate': 'Bearer' });
+    res.end(JSON.stringify({ error: { code: 'unauthorized', message: 'missing or wrong bearer token', stage: 'http', request_id: requestId } }));
+    return;
+  }
+
   const handler = routes.get(`${req.method} ${url.pathname}`);
   if (!handler) {
     res.writeHead(404, { 'content-type': 'application/json' });
@@ -266,7 +273,7 @@ for (const c of runtimeReport().components) {
 }
 
 const port = Number(process.env.PORT ?? 8787);
-const host = process.env.HOST ?? '127.0.0.1'; // set HOST=0.0.0.0 only behind a trusted network or proxy: the API has no auth
+const host = process.env.HOST ?? '127.0.0.1'; // set HOST=0.0.0.0 only with AHD_API_TOKEN set or behind a trusted network
 server.listen(port, host, () => {
   process.stdout.write(`agenthelpdesk desk api listening on ${host}:${port}\n`);
 });

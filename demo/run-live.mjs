@@ -21,7 +21,10 @@ const say = (s = '') => process.stdout.write(`${s}\n`);
 async function call(method, path, body, okStatuses = []) {
   const res = await fetch(`${base}${path}`, {
     method,
-    headers: body ? { 'content-type': 'application/json' } : {},
+    headers: {
+      ...(body ? { 'content-type': 'application/json' } : {}),
+      ...(process.env.AHD_API_TOKEN ? { authorization: `Bearer ${process.env.AHD_API_TOKEN}` } : {}),
+    },
     body: body ? JSON.stringify(body) : undefined,
     signal: AbortSignal.timeout(15 * 60_000),
   });
