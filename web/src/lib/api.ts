@@ -851,3 +851,25 @@ export function failureToTicket(f: Failure, ctx: TicketContext): Ticket {
     ctx,
   );
 }
+
+// ---- fix memory ----
+export interface MemoryEntry {
+  signature: { key: string; vendor: string; method: string; path: string; status: number | null; error: string };
+  source_case: string;
+  sandbox: string;
+  path: string;
+  model: string;
+  remembered_at: string;
+  reuse_count: number;
+  reused_by: string[];
+  proofs: { replay: boolean; vendor_tests: boolean; fresh_agent: boolean };
+  fix_steps: string[];
+  content_sha256: string;
+}
+export interface MemoryList { sandboxes: 'blaxel' | 'simulated'; total_reuses: number; entries: MemoryEntry[] }
+export interface MemoryResume {
+  case_id: string; sandbox: string; real: boolean; found: boolean; resumed_ms: number;
+  state_preserved: boolean; path: string; expected_sha256: string; actual_sha256: string | null; note: string;
+}
+export const getMemory = () => request<MemoryList>('GET', '/v1/memory');
+export const resumeMemory = (caseId: string) => request<MemoryResume>('POST', '/v1/memory/resume', { case_id: caseId });

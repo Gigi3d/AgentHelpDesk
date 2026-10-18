@@ -162,6 +162,7 @@ export default function Theater() {
               <Link to={`/app/tickets/${view.case.id}`} className="underline underline-offset-4 hover:text-white">Open ticket</Link>
             </>
           )}
+          <Link to="/memory" className="underline underline-offset-4 hover:text-white">Memory</Link>
           <button onClick={startDemo} disabled={busy} className="rounded-full bg-[#E6007A] px-3.5 py-1.5 text-[13px] font-semibold text-white transition hover:bg-[#FF2D87] disabled:opacity-50">
             {busy ? 'Starting' : 'Run the Ledgerly case'}
           </button>

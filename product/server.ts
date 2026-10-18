@@ -24,6 +24,7 @@ import { registerRoutes as registerEvals } from './evals/register.ts';
 import { registerRoutes as registerInkbox } from './inkbox/register.ts';
 import { startNotifier } from './inkbox/notify.ts';
 import { registerRoutes as registerFeeds } from './feeds/register.ts';
+import { registerRoutes as registerMemory } from './memory/register.ts';
 import { createInkboxClient } from './approvals/inkbox-client.ts';
 import { createA2A } from './inkbox/a2a.ts';
 import { getRunner } from './sandbox/runner.ts';
@@ -132,6 +133,7 @@ const startCase = async (caseId: string): Promise<void> => {
 };
 registerInkbox(router, repo, { start: startCase });
 registerFeeds(router, repo, { start: startCase });
+registerMemory(router, repo);
 
 // Says, from the environment as it really is, which components are real. Never returns secrets.
 // Blaxel's preview proxy answers /healthz itself, so the desk's own liveness and persistence facts live here.

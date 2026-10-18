@@ -19,6 +19,7 @@ import Approve from './pages/Approve';
 import Staff from './pages/Staff';
 import NotFound from './pages/NotFound';
 import Theater from './pages/Theater';
+import Memory from './pages/Memory';
 import { Gate } from './components/Gate';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
@@ -33,6 +34,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route element={<Gate />}>
             <Route path="/theater" element={<Theater />} />
             <Route path="/theater/:id" element={<Theater />} />
+            <Route path="/memory" element={<Memory />} />
             <Route path="/approve/:id" element={<Approve />} />
             <Route path="/staff" element={<Staff />} />
             <Route path="/app" element={<AppShell />}>

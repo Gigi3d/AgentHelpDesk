@@ -188,6 +188,20 @@ export async function blxCreateIfNotExists(name: string): Promise<BlaxelSandboxL
   };
   const region = process.env.BL_REGION ?? process.env.BLAXEL_REGION;
   if (region) opts['region'] = region;
+  // Case sandboxes are kept as the desk's memory of a proven fix, so they sit in standby instead of being
+  // deleted. An idle TTL (default 24 h, AHD_SANDBOX_IDLE_TTL, "off" to disable) keeps them from filling the
+  // workspace quota forever. If the platform rejects the lifecycle setting we retry without it.
+  const ttl = process.env.AHD_SANDBOX_IDLE_TTL ?? '24h';
+  if (ttl !== 'off') {
+    try {
+      return asSandbox(
+        await si.createIfNotExists({ ...opts, lifecycle: { expirationPolicies: [{ type: 'ttl-idle', value: ttl, action: 'delete' }] } }),
+        'sandbox.create',
+      );
+    } catch (err) {
+      if (/quota|429/i.test(messageOf(err))) throw err;
+    }
+  }
   return asSandbox(await si.createIfNotExists(opts), 'sandbox.create');
 }
 
