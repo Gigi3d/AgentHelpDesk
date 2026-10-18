@@ -12,7 +12,8 @@
 // names (`DraftFix.changed`), never this reasoning, never the diff, and never
 // the resolver's notes — leaking the fix into that prompt is the failure mode the
 // build plan calls out.
-import type { Failure } from '../shared/types.ts';
+import type { Failure, SandboxHandle, Vendor } from '../shared/types.ts';
+import type { Repository } from '../store/repository.ts';
 import { changeKindOf } from './gate.ts';
 import type { ChangeKind } from './gate.ts';
 import { asRecord, clip, methodOf, snippetFor, statusOf, titleFor, typeSlug, urlOf } from './inspect.ts';
@@ -292,4 +293,15 @@ export function reproHarness(f: Failure): string {
   ].join('\n');
 }
 
-export type DraftFn = (f: Failure, attempt: number) => DraftFix;
+/** What the loop hands a resolver besides the case: the case's own sandbox (so a real
+ * resolver can read the vendor's files instead of guessing), the vendor row, and the
+ * repository (so a draft can be stored and reused on a re-run). The deterministic
+ * `draftFix` ignores all of it. */
+export interface DraftContext {
+  sandbox: SandboxHandle;
+  vendor: Vendor;
+  repo: Repository;
+}
+
+/** A resolver may be synchronous (the template) or asynchronous (a model call). */
+export type DraftFn = (f: Failure, attempt: number, ctx?: DraftContext) => DraftFix | Promise<DraftFix>;

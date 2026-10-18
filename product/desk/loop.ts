@@ -45,7 +45,7 @@ import { clip, envInt } from './inspect.ts';
 import { resolveVendor } from './intake.ts';
 import { changeKindOf, runGate } from './gate.ts';
 import type { AskApproval, ChangeKind, GateDecision } from './gate.ts';
-import { draftFix, reproFixture, reproHarness, reproPaths } from './resolve.ts';
+import { draftFix, reproFixture, reproHarness, reproPaths, targetPathFor } from './resolve.ts';
 import type { DraftFix, DraftFn } from './resolve.ts';
 import { allProofsPass, replyFromStore, shipCase } from './ship.ts';
 import type { PrDescriptor, RegressionTest } from './ship.ts';
@@ -87,8 +87,17 @@ export interface LoopDeps {
   proofs?: ProofRunner;
   /** Injected approval channel. Defaults to gate.localApprovalStub. */
   askApproval?: AskApproval;
-  /** Injected resolver. Defaults to the deterministic draftFix stand-in. */
+  /** Injected resolver. Defaults to the deterministic draftFix stand-in. May be async:
+   * it is awaited, and it receives the case's sandbox so it can read the vendor's files. */
   draft?: DraftFn;
+  /** Puts the vendor's checkout (and the proof tools) into the case sandbox. Called at
+   * the START of EVERY run, so a re-run after an approval reproduces against the pristine
+   * checkout rather than against the fix an earlier run already wrote. */
+  provision?: (sb: SandboxHandle, vendor: Vendor, caseId: string) => Promise<void>;
+  /** Run the fresh-agent check on the UNFIXED docs first. The proof only means something
+   * if the same fresh agent fails without the fix; the result is recorded as
+   * `proof.fresh_agent_baseline` and never blocks the case. */
+  freshBaseline?: boolean;
   reproExpect?: ReproExpectation;
   maxAttempts?: number;
   /** Per-command sandbox timeout. Clamped to 60s: one Blaxel command may wait
@@ -207,7 +216,7 @@ export async function runLoop(repo: Repository, caseId: string, deps: LoopDeps =
   const maxAttempts = deps.maxAttempts ?? envInt('AHD_MAX_ATTEMPTS', 3, 1, 10);
   const budgetMs = deps.budgetMs ?? envInt('AHD_LOOP_BUDGET_MS', 240_000, 1_000, 3_600_000);
   const reproExpect = deps.reproExpect ?? envReproExpect();
-  const draft = deps.draft ?? draftFix;
+  const draft: DraftFn = deps.draft ?? draftFix;
 
   const stored = await repo.getFailure(caseId);
   if (!stored) throw new HttpError(404, 'case_not_found', `no case ${caseId}`, 'loop.load');
@@ -276,13 +285,30 @@ export async function runLoop(repo: Repository, caseId: string, deps: LoopDeps =
     return escalate('sandbox_unavailable', toLoopError(err, 'sandbox_unavailable', 'sandbox.createOrResume'));
   }
 
+  if (deps.provision) {
+    const provisionStarted = Date.now();
+    try {
+      await deps.provision(sb, vendor, caseId);
+    } catch (err) {
+      return escalate('sandbox_provision_failed', toLoopError(err, 'sandbox_provision_failed', 'sandbox.provision'));
+    }
+    await recordStage(repo, {
+      ticketId: caseId,
+      stage: 'reproducing',
+      tool: 'sandbox',
+      action: 'sandbox.provisioned',
+      startedAtMs: provisionStarted,
+      payload: { sandbox: sandboxName(caseId), vendor_id: vendor.id, note: 'vendor checkout reset to its pristine state for this run' },
+    });
+  }
+
   const paths = reproPaths(stored);
   const command = reproCommand(caseId, paths.fixture, paths.harness);
   // proofs/proofs.ts reads the vendor test command from /ahd/test-command and falls
   // back to `npm test`. Only an operator can say what the vendor's suite is, so the
-  // file is written only when AHD_VENDOR_TEST_COMMAND is set — never from inbound
-  // report data, which may not supply a command line.
-  const vendorTestCommand = clip(process.env['AHD_VENDOR_TEST_COMMAND'] ?? '', 500).trim();
+  // command comes from the operator-set vendor row (`Vendor.test_command`) or
+  // AHD_VENDOR_TEST_COMMAND — never from inbound report data.
+  const vendorTestCommand = clip(vendor.test_command ?? process.env['AHD_VENDOR_TEST_COMMAND'] ?? '', 500).trim();
   let verdict: { reproduced: boolean; reason: string };
   try {
     await sb.write(paths.fixture, reproFixture(stored));
@@ -324,6 +350,10 @@ export async function runLoop(repo: Repository, caseId: string, deps: LoopDeps =
     payload: { command, detail: verdict.reason },
   });
 
+  if (deps.freshBaseline === true) {
+    await runFreshBaseline({ repo, proofRunner, sb, failure: stored });
+  }
+
   // ================= stages: fix_drafted + proving, up to N attempts =================
   let attemptRow: Attempt | null = null;
   let currentDraft: DraftFix | null = null;
@@ -335,7 +365,7 @@ export async function runLoop(repo: Repository, caseId: string, deps: LoopDeps =
 
     let drafted: DraftFix;
     try {
-      drafted = draft(stored, n);
+      drafted = await draft(stored, n, { sandbox: sb, vendor, repo });
     } catch (err) {
       return escalate('resolver_failed', toLoopError(err, 'resolver_failed', 'resolver.draft'));
     }
@@ -559,6 +589,47 @@ export async function runLoop(repo: Repository, caseId: string, deps: LoopDeps =
     gate,
     error: null,
   };
+}
+
+/** The fresh-agent check on the UNFIXED docs, in the case sandbox itself (no resolver
+ * state exists yet, so no fork is needed). Evidence only: it records whether the same
+ * kind of agent that must later succeed with the fix actually FAILS without it. If it
+ * passes, the later proof does not discriminate, and the event says so. Never blocks. */
+async function runFreshBaseline(args: {
+  repo: Repository;
+  proofRunner: ProofRunner;
+  sb: SandboxHandle;
+  failure: Failure;
+}): Promise<void> {
+  const { repo, proofRunner, sb, failure } = args;
+  const already = await repo.toolEvents({ ticket_id: failure.id, action: 'proof.fresh_agent_baseline' });
+  if (already.length > 0) return;
+  const target = targetPathFor(changeKindOf(failure.klass, failure.response));
+  if (target === null) return;
+  const started = Date.now();
+  let result: ProofResult;
+  try {
+    result = await proofRunner.freshAgent(sb, failure.task, [target]);
+  } catch (err) {
+    result = { proof: 'fresh_agent', pass: false, detail: `baseline could not run: ${err instanceof Error ? err.message : String(err)}` };
+  }
+  await recordStage(repo, {
+    ticketId: failure.id,
+    stage: 'reproducing',
+    tool: 'proofs',
+    action: 'proof.fresh_agent_baseline',
+    // ok = the agent failed on the unfixed docs, as it must. error = it PASSED without
+    // the fix, which means the later fresh-agent proof cannot show the fix mattered.
+    result: result.pass ? 'error' : 'ok',
+    startedAtMs: started,
+    payload: {
+      docs: target,
+      agent_succeeded_without_fix: result.pass,
+      expected: 'the fresh agent FAILS on the unfixed docs',
+      discriminates: !result.pass,
+      detail: clip(result.detail ?? '', 2000),
+    },
+  });
 }
 
 /** The fresh-agent proof, isolated in a fork of the case snapshot so it cannot

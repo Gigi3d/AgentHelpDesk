@@ -19,9 +19,13 @@ import { registerRoutes as registerEvals } from './evals/register.ts';
 import { registerRoutes as registerEmail } from './email/register.ts';
 import { getRunner } from './sandbox/runner.ts';
 import { getProofRunner } from './proofs/proofs.ts';
+import { liveLoopDeps, localRunnerFromEnv, normalizeBlaxelEnv, runtimeReport, seedLiveVendor } from './live.ts';
 // Imported last on purpose: demo-seed.ts's module body turns on the offline fakes
 // when AHD_SEED=demo, and that must happen before getRunner()/getProofRunner() run below.
 import { demoSeedRequested, seedDemo } from './demo-seed.ts';
+
+// Accept BL_API_KEY or BLAXEL_API_KEY before anything reads the sandbox key.
+normalizeBlaxelEnv();
 
 export const repo: Repository = new MemoryRepository();
 
@@ -71,6 +75,9 @@ const deskDeps: DeskDeps = {
   // ToolEvents: the console shows what really ran, not what we intended to run.
   runner: getRunner(repo),
   proofs: getProofRunner(repo),
+  // Opt-in real components (AHD_RESOLVER, AHD_PROVISION_DIR, AHD_FRESH_BASELINE); empty by default.
+  ...liveLoopDeps(),
+  ...(await localRunnerFromEnv()),
   askApproval,
   onBillable: async (notice, store) => {
     // billing/ picks the lane (it knows the vendor's rail and the exemptions); the
@@ -107,6 +114,9 @@ registerBilling(router, repo);
 registerApprovals(router, repo);
 registerEvals(router, repo);
 registerEmail(router, repo);
+
+// Says, from the environment as it really is, which components are real. Never returns secrets.
+router.add('GET', '/v1/runtime', async () => ({ status: 200, body: runtimeReport() }));
 
 // Token-bucket rate limit per client IP so one runaway agent cannot melt the desk.
 const buckets = new Map<string, { tokens: number; ts: number }>();
@@ -245,6 +255,14 @@ if (demoSeedRequested()) {
     `agenthelpdesk demo seed: vendor ${seeded.vendor_id} (${seeded.risk_policy}, lane ${seeded.lane}), ` +
       `${seeded.cases.length} case(s), ${seeded.meter_events} meter event(s), ${seeded.approvals_pending} awaiting approval\n`,
   );
+}
+
+const liveVendor = await seedLiveVendor(repo);
+if (liveVendor) {
+  process.stdout.write(`agenthelpdesk live vendor: ${liveVendor.id} (${liveVendor.risk_policy}, test: ${liveVendor.test_command ?? 'default'})\n`);
+}
+for (const c of runtimeReport().components) {
+  process.stdout.write(`agenthelpdesk runtime: ${c.real ? 'REAL ' : 'fake '} ${c.name}: ${c.detail}\n`);
 }
 
 const port = Number(process.env.PORT ?? 8787);
