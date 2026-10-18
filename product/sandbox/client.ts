@@ -8,15 +8,15 @@
 //   - commands run with `sandbox.process.exec`, files are written with `sandbox.fs.write`
 //   - ONE command may wait at most 60 seconds, so anything longer must be started
 //     backgrounded and polled — that cap is handled here (`runCapped`, `poll`).
-//   - snapshots can be forked (used for the fresh-agent proof).
+//   - `sandbox.fork(name)` forks the sandbox's current state (used for the fresh-agent proof).
 //
 // Honesty rules (product/AGENTS.md "Sponsor SDK honesty"):
 //   - product/ has ZERO runtime dependencies, so `@blaxel/core` is loaded lazily via a
 //     non-literal dynamic import and used through the minimal structural types below.
 //     Nothing is invented: every call we are not 100% sure of is an optional probe that
 //     fails loud with a stage name and points at AHD_SANDBOX_FAKE=1 as the offline path.
-//   - OPEN items (also flagged in sandbox/README.md): exact SDK shapes for snapshot,
-//     fork and destroy; the sandbox image name (AHD_SANDBOX_IMAGE is required, we refuse
+//   - OPEN items (also flagged in sandbox/README.md): the SDK's auth variables and its
+//     delete call (destroy still probes); the sandbox image name (AHD_SANDBOX_IMAGE is required, we refuse
 //     to guess one); concurrent-sandbox quota; standby storage cost.
 import { randomUUID } from 'node:crypto';
 import type { ExecResult, SandboxHandle } from '../shared/types.ts';
@@ -31,11 +31,20 @@ const PID_RE = /^[A-Za-z0-9-]{1,64}$/;
 // ---- minimal structural view of the SDK (probed, never assumed) ----
 export interface BlaxelSandboxLike {
   name?: unknown;
-  process?: { exec?: (cmd: string) => Promise<unknown> };
-  fs?: { write?: (path: string, content: string) => Promise<unknown> };
-  // The three calls below are NOT in the doc facts we were given; they are optional
+  // Documented (docs.blaxel.ai, Sandboxes -> Processes): exec takes an OPTIONS OBJECT,
+  // `{ command, waitForCompletion: true }`, and returns exitCode/stdout/stderr when it
+  // waited. A bare string is not the documented shape.
+  process?: { exec?: (opts: Record<string, unknown>) => Promise<unknown> };
+  // Documented (Sandboxes -> Filesystem): `fs.write(path, content)`, `fs.read(path)`.
+  fs?: {
+    write?: (path: string, content: string) => Promise<unknown>;
+    read?: (path: string) => Promise<unknown>;
+  };
+  // Documented (Sandboxes -> Fork): `sandbox.fork(targetName)` snapshots the source's
+  // current state (files and running processes) and forks from it.
+  fork?: (targetName: string, opts?: Record<string, unknown>) => Promise<unknown>;
+  // The two calls below are still NOT confirmed against the docs; they are optional
   // probes so we never invent a method that is not there at runtime (fail loud instead).
-  snapshot?: (...args: unknown[]) => Promise<unknown>;
   kill?: (...args: unknown[]) => Promise<unknown>;
   delete?: (...args: unknown[]) => Promise<unknown>;
 }
@@ -122,7 +131,8 @@ export function normalizeExec(raw: unknown): ExecResult {
       `sandbox.exec: unrecognized Blaxel exec result (no exitCode/exit_code/code); saw keys [${Object.keys(root).join(', ')}] — confirm the SDK shape against docs.blaxel.ai (Sandboxes → processes)`,
     );
   }
-  return { stdout: pickString(body, ['stdout', 'output']) ?? '', stderr: pickString(body, ['stderr', 'error']) ?? '', exit_code: exit };
+  // `logs` (stdout and stderr together) is only a fallback when stdout is absent.
+  return { stdout: pickString(body, ['stdout', 'output', 'logs']) ?? '', stderr: pickString(body, ['stderr', 'error']) ?? '', exit_code: exit };
 }
 
 function asSandbox(raw: unknown, stage: string): BlaxelSandboxLike {
@@ -189,7 +199,11 @@ export async function blxExec(sb: BlaxelSandboxLike, cmd: string, opts?: { timeo
   let timer: ReturnType<typeof setTimeout> | undefined;
   try {
     const raw: unknown = await Promise.race([
-      proc.exec.call(proc, cmd),
+      // Options object per docs.blaxel.ai (Sandboxes -> Processes). `waitForCompletion`
+      // blocks until exit and is capped by Blaxel at 60s, which is why longer budgets go
+      // background+poll (runCapped). A non-zero exit does not throw: it comes back with
+      // status "failed" and an exitCode, which normalizeExec reads.
+      proc.exec.call(proc, { command: cmd, waitForCompletion: true }),
       new Promise<never>((_resolve, reject) => {
         timer = setTimeout(
           () => reject(new Error(`sandbox.exec: Blaxel did not return within ${waitMs}ms (docs cap ${BLAXEL_EXEC_WAIT_CAP_MS}ms): ${tailText(cmd, 120)}`)),
@@ -203,60 +217,109 @@ export async function blxExec(sb: BlaxelSandboxLike, cmd: string, opts?: { timeo
   }
 }
 
-/** Documented: sandbox.fs.write — docs.blaxel.ai, Sandboxes → filesystem. */
+/** The Blaxel filesystem examples all use absolute paths, and the desk writes some
+ * case artefacts with relative ones (`ahd/repro/<id>.json`, `ahd/pr/<id>.md`). A
+ * relative path would resolve against a working directory this client cannot see, so
+ * it is pinned under one fixed directory instead. */
+export const RELATIVE_PATH_ROOT = '/ahd/work';
+
+export function absolutePath(path: string): string {
+  if (path.startsWith('/')) return path;
+  return `${RELATIVE_PATH_ROOT}/${path.replace(/^\.\/+/, '')}`;
+}
+
+/** Documented: sandbox.fs.write — docs.blaxel.ai, Sandboxes → Filesystem. */
 export async function blxWrite(sb: BlaxelSandboxLike, path: string, content: string): Promise<void> {
   const fs = sb.fs;
   if (!fs || typeof fs.write !== 'function') {
-    throw new Error('sandbox.write: sandbox has no fs.write — cannot match docs.blaxel.ai (Sandboxes → filesystem)');
+    throw new Error('sandbox.write: sandbox has no fs.write — cannot match docs.blaxel.ai (Sandboxes → Filesystem)');
   }
-  await fs.write.call(fs, path, content);
+  // OPEN: the docs do not say whether fs.write creates missing parent directories, so
+  // make them first through the documented exec rather than assume.
+  const abs = absolutePath(path);
+  const dir = abs.slice(0, abs.lastIndexOf('/')) || '/';
+  const mk = await blxExec(sb, `mkdir -p ${shellQuote(dir)}`, { timeout_ms: 15_000 });
+  if (mk.exit_code !== 0) {
+    throw new Error(`sandbox.write: could not create ${dir} (exit ${mk.exit_code}): ${tailText(mk.stderr)}`);
+  }
+  await fs.write.call(fs, abs, content);
 }
 
-/** fs.read is NOT in our confirmed doc facts, so reads go through documented process.exec + cat. */
+/** Documented: sandbox.fs.read(path) — docs.blaxel.ai, Sandboxes → Filesystem. The docs do
+ * not give its return type, so a string is taken as-is and an object is read for
+ * `content`; anything else fails loud. */
 export async function blxRead(sb: BlaxelSandboxLike, path: string): Promise<string> {
-  const r = await blxExec(sb, `cat ${shellQuote(path)}`);
-  if (r.exit_code !== 0) {
-    throw new Error(`sandbox.read: cat ${path} failed (exit ${r.exit_code}): ${tailText(r.stderr)}`);
+  const fs = sb.fs;
+  if (!fs || typeof fs.read !== 'function') {
+    throw new Error('sandbox.read: sandbox has no fs.read — cannot match docs.blaxel.ai (Sandboxes → Filesystem)');
   }
-  return r.stdout;
+  const abs = absolutePath(path);
+  let raw: unknown;
+  try {
+    raw = await fs.read.call(fs, abs);
+  } catch (err) {
+    throw new Error(`sandbox.read: fs.read ${abs} failed: ${messageOf(err)}`);
+  }
+  if (typeof raw === 'string') return raw;
+  const content = asRecord(raw)?.['content'];
+  if (typeof content === 'string') return content;
+  throw new Error(`sandbox.read: fs.read ${abs} returned an unrecognised shape (${typeof raw}) — confirm against docs.blaxel.ai`);
 }
+
+/** Token the runner hands back from `snapshot()` and takes in `fork()`. */
+export const FORK_TOKEN_PREFIX = 'current:';
 
 /**
- * OPEN/unconfirmed: the doc facts say "snapshots can be forked" but do not name the call.
- * We probe the documented surface instead of inventing one, and fail loud pointing at the
- * fake. Confirm the real method against docs.blaxel.ai (Sandboxes → snapshots) before demo.
+ * Documented (docs.blaxel.ai, Sandboxes → Fork): `sandbox.fork(targetName)` "automatically
+ * snapshots the source sandbox's current state and forks from it", so no separate snapshot
+ * call is needed. `snapshot()` therefore only records WHICH sandbox to fork from, as
+ * `current:<name>`. That is exactly the semantics the fresh-agent proof wants: a fork of the
+ * state at the moment the resolver's files were written, not of a stale earlier checkpoint.
+ * (A named snapshot, `sandbox.snapshots.create(name)`, is also documented; it is not needed.)
  */
-export async function blxSnapshot(sb: BlaxelSandboxLike, name: string): Promise<string> {
-  if (typeof sb.snapshot === 'function') {
-    const raw: unknown = await sb.snapshot();
-    if (typeof raw === 'string' && raw.length > 0) return raw;
-    const rec = asRecord(raw);
-    for (const key of ['id', 'snapshotId', 'snapshot_id', 'name']) {
-      const v = rec?.[key];
-      if (typeof v === 'string' && v.length > 0) return v;
-    }
-    throw new Error(`sandbox.snapshot: snapshot call returned an unrecognized shape for '${name}' — confirm against docs.blaxel.ai (Sandboxes → snapshots)`);
-  }
-  throw new Error(
-    `sandbox.snapshot: no snapshot call found on sandbox '${name}'. The exact SDK method is unconfirmed (docs say snapshots can be forked); run with AHD_SANDBOX_FAKE=1 offline or confirm the call in docs.blaxel.ai (Sandboxes → snapshots).`,
-  );
+export async function blxSnapshot(_sb: BlaxelSandboxLike, name: string): Promise<string> {
+  if (typeof name !== 'string' || name.length === 0) throw new Error('sandbox.snapshot: sandbox name must be a non-empty string');
+  return `${FORK_TOKEN_PREFIX}${name}`;
 }
 
-/** OPEN/unconfirmed: fork-from-snapshot call shape. Probed, never invented silently; fails loud. */
+const sleepMs = (ms: number): Promise<void> => new Promise((resolve) => { setTimeout(resolve, ms); });
+
+/**
+ * Fork per the documented `const result = await sandbox.fork("copy")`. The docs do not say
+ * what `result` holds or whether the copy is ready when the call returns, so the fork is
+ * re-read by name with the documented `SandboxInstance.get` and then probed with a trivial
+ * command until it answers, rather than trusting either.
+ */
 export async function blxFork(snapshotId: string, newName: string): Promise<BlaxelSandboxLike> {
-  const si = await sandboxInstanceStatics('sandbox.fork');
-  if (typeof si.fork === 'function') {
-    return asSandbox(await si.fork(snapshotId, { name: newName }), 'sandbox.fork');
+  if (!snapshotId.startsWith(FORK_TOKEN_PREFIX)) {
+    throw new Error(`sandbox.fork: '${tailText(snapshotId, 60)}' is not a fork token from snapshot() (expected '${FORK_TOKEN_PREFIX}<sandbox>')`);
   }
-  if (typeof si.createIfNotExists === 'function') {
-    // Best-effort with the ONE documented create call; the `snapshot` option name is
-    // UNCONFIRMED — verify against docs.blaxel.ai (Sandboxes → snapshots/fork) before demo.
-    return asSandbox(
-      await si.createIfNotExists({ name: newName, image: sandboxImage(), snapshot: snapshotId, labels: { app: 'agenthelpdesk', forked_from: snapshotId } }),
-      'sandbox.fork',
-    );
+  const sourceName = snapshotId.slice(FORK_TOKEN_PREFIX.length);
+  const source = await blxGet(sourceName);
+  if (typeof source.fork !== 'function') {
+    throw new Error(`sandbox.fork: sandbox '${sourceName}' has no fork() — cannot match docs.blaxel.ai (Sandboxes → Fork)`);
   }
-  throw new Error('sandbox.fork: neither SandboxInstance.fork nor createIfNotExists is available — cannot fork snapshot for the fresh-agent proof');
+  try {
+    await source.fork.call(source, newName);
+  } catch (err) {
+    throw new Error(`sandbox.fork: fork of '${sourceName}' to '${newName}' failed: ${messageOf(err)}`);
+  }
+  const deadline = Date.now() + Number(process.env.AHD_FORK_READY_MS ?? 60_000);
+  let lastErr = 'no attempt made';
+  for (;;) {
+    try {
+      const copy = await blxGet(newName);
+      const probe = await blxExec(copy, 'true', { timeout_ms: 15_000 });
+      if (probe.exit_code === 0) return copy;
+      lastErr = `probe exited ${probe.exit_code}`;
+    } catch (err) {
+      lastErr = messageOf(err);
+    }
+    if (Date.now() >= deadline) {
+      throw new Error(`sandbox.fork: fork '${newName}' of '${sourceName}' never became ready (stage sandbox.fork.ready): ${lastErr}`);
+    }
+    await sleepMs(1_500);
+  }
 }
 
 /** OPEN/unconfirmed: teardown call shape (sb.kill / sb.delete / static delete). Probed; fails loud. */

@@ -40,7 +40,7 @@ const summarizeRetry = (r: RetryReceipt) =>
 /** Errors go back as the backend's envelope, not as prose: an agent branches on code and stage. */
 const errorResult = (err: unknown) => {
   const e = asDeskClientError(err);
-  return { content: [{ type: 'text' as const, text: JSON.stringify(e.toEnvelope()) }], isError: true };
+  return { content: [{ type: 'text' as const, text: JSON.stringify(e.toEnvelope()) }], isError: true as const };
 };
 
 const envelopeOf = (err: unknown): { body: unknown; status: DeskClientError['status'] } => {

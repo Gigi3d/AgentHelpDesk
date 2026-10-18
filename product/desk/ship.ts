@@ -457,13 +457,21 @@ export async function replyFromStore(repo: Repository, failure: Failure, kind: C
     return payload ? payload['decision'] === 'no' : false;
   });
   const draft = draftFix(failure, 1);
+  // A real resolver stores what it drafted. Polling must show THAT (the text the proofs ran on
+  // and the human approved), not the template this function would otherwise rebuild.
+  const stored = events
+    .filter((e) => e.action === 'resolver.draft')
+    .map((e) => (typeof e.payload === 'object' && e.payload !== null ? (e.payload as Record<string, unknown>) : null))
+    .filter((p): p is Record<string, unknown> => p !== null && Array.isArray(p['fix_steps']) && typeof p['snippet'] === 'string')
+    .at(-1);
+  const storedSteps = stored ? (stored['fix_steps'] as unknown[]).filter((x): x is string => typeof x === 'string') : [];
   return buildAgentReply({
     failure,
     kind,
     title: draft.title,
     type_slug: draft.type_slug,
-    snippet: draft.snippet,
-    fix_steps: draft.fix_steps,
+    snippet: stored && storedSteps.length > 0 ? (stored['snippet'] as string) : draft.snippet,
+    fix_steps: storedSteps.length > 0 ? storedSteps : draft.fix_steps,
     proofs,
     regression_test_id: regressionIdFor(failure.id),
     audit_receipt: auditReceiptFor(failure.id, attempt.id, outcome.shipped_as),
