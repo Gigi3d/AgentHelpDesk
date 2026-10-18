@@ -6,6 +6,8 @@ An agent calls a vendor API and fails: the docs are wrong, the error names no fi
 
 **Live demo:** https://gigi3d.github.io/AgentHelpDesk/ (console at `/app`). The page is hosted on GitHub Pages and talks to the desk running on Blaxel (https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run).
 
+**Why GitHub Pages:** Pages does not sleep, so the landing page and console load every time, including for judges at any hour. The pages call the desk on Blaxel for data. That desk can restart, so a per-minute check inside the sandbox and a 5-minute GitHub check bring it back on their own. If it is mid-restart the console says so and recovers within a minute or two.
+
 ![AgentHelpDesk landing page](docs/landing.png)
 
 **Stays up:** `.github/workflows/keep-live.yml` checks the desk every 10 minutes and redeploys if it is down. The URL does not change. Setup is in that file's header.
