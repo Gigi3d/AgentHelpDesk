@@ -1,0 +1,48 @@
+# Keeps the hosted desk up. Every 10 minutes it checks the live URL; if the desk does not answer
+# three times in a row it redeploys. A redeploy reuses the sandbox and preview, so the URL stays the same.
+#
+# One-time setup (repo Settings > Secrets and variables > Actions):
+#   secret   ENV_LIVE      the full contents of demo/.env.live, plus a line AHD_API_TOKEN=<your admin key>
+#   variable AHD_LIVE_URL  https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run
+# Without ENV_LIVE the job only reports that the desk is down (the run fails, GitHub emails you).
+name: keep-live
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+concurrency: keep-live
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    env:
+      URL: ${{ vars.AHD_LIVE_URL || 'https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run' }}
+    outputs:
+      up: ${{ steps.probe.outputs.up }}
+    steps:
+      - id: probe
+        run: |
+          for i in 1 2 3; do
+            code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' "$URL/v1/status" || true)
+            echo "attempt $i: HTTP $code"
+            case "$code" in 200|401) echo up=true >> "$GITHUB_OUTPUT"; exit 0;; esac
+            sleep 20
+          done
+          echo up=false >> "$GITHUB_OUTPUT"
+  heal:
+    needs: check
+    if: needs.check.outputs.up == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Redeploy the desk
+        env:
+          ENV_LIVE: ${{ secrets.ENV_LIVE }}
+        run: |
+          if [ -z "$ENV_LIVE" ]; then echo "Desk is down and the ENV_LIVE secret is not set, so it cannot redeploy."; exit 1; fi
+          umask 077; printf '%s\n' "$ENV_LIVE" > demo/.env.live
+          demo/live.sh deploy
+      - name: Remove secrets
+        if: always()
+        run: rm -f demo/.env.live demo/.deploy.json
