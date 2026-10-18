@@ -5,7 +5,7 @@
 //   demo/live.sh deploy            # first deploy, or a redeploy of the code and env
 //
 // What it does: creates (or reuses) the sandbox `ahd-desk`, uploads product/ and demo/sandbox-root,
-// installs @blaxel/core, writes /app/.env (mode 600, secrets from demo/.env.live), starts the desk with
+// installs @blaxel/core, writes /app/ahd.env (mode 600, secrets from demo/.env.live), starts the desk with
 // keepAlive + restartOnFailure, creates a preview on port 8787, and waits for /healthz.
 //
 // UNVERIFIED against a live account when written: the image's Node version (we fall back to
@@ -96,7 +96,9 @@ const inst = await sb.process.exec({ command: 'cd /app/product && npm i --no-sav
 if (inst.exitCode && inst.exitCode !== 0) die(`npm install failed:\n${inst.logs ?? ''}`);
 say('   dependencies installed');
 
-// 5. Environment: secrets stay in /app/.env (mode 600), never in the process list or the image.
+// 5. Environment: secrets stay in /app/ahd.env (mode 600), never in the process list or the image.
+//    NOT named .env: the Blaxel SDK reads ./.env from the working directory, ranks it above process.env,
+//    and (without the dotenv package) keeps the quotes, which turned a valid key into a 401.
 const keep = ['BL_API_KEY', 'BL_WORKSPACE', 'BL_REGION', 'ANTHROPIC_API_KEY', 'STRIPE_SECRET_KEY', 'STRIPE_TEST_CUSTOMER_ID', 'INKBOX_API_KEY', 'PRIMITIVE_KEY', 'ARMATURE_KEY', 'AHD_APPROVALS_FALLBACK_EMAIL'];
 const contact = env.AHD_APPROVALS_FALLBACK_EMAIL || 'you@example.com';
 const vendor = { id: 'ledgerly', name: 'Ledgerly', risk_policy: 'approve_first', report_contacts: [contact], test_command: 'cd /ahd/work && node --test test/*.test.mjs', stripe_customer_id: env.STRIPE_TEST_CUSTOMER_ID || '', payer_mode: 'vendor' };
@@ -110,14 +112,14 @@ lines.push(
   `AHD_REPRO_COMMAND='node /ahd/replay.mjs'`, `AHD_REPRO_EXPECT=nonzero`,
   `AHD_VENDOR_JSON=${JSON.stringify(JSON.stringify(vendor))}`,
 );
-await sb.fs.write('/app/.env', `${lines.join('\n')}\n`);
-await sh('chmod 600 /app/.env');
-say('5. Environment written to /app/.env (mode 600)');
+await sb.fs.write('/app/ahd.env', `${lines.join('\n')}\n`);
+await sh('rm -f /app/.env && chmod 600 /app/ahd.env');
+say('5. Environment written to /app/ahd.env (mode 600)');
 
 // 6. Start the desk and keep it alive.
 await sb.process.exec({
   name: 'desk',
-  command: `bash -lc 'cd /app && set -a && . ./.env && set +a && exec ${NODE} --experimental-strip-types product/server.ts'`,
+  command: `bash -lc 'cd /app && set -a && . ./ahd.env && set +a && exec ${NODE} --experimental-strip-types product/server.ts'`,
   workingDir: '/app',
   waitForCompletion: false,
   keepAlive: true,

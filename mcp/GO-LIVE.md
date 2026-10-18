@@ -29,7 +29,7 @@ your laptop or a tunnel. The desk is gated by a bearer token (`AHD_API_TOKEN`); 
 
 ```sh
 demo/live.sh check      # keys ok
-demo/live.sh deploy     # uploads product/, writes /app/.env (mode 600), starts the desk, creates the preview
+demo/live.sh deploy     # uploads product/, writes /app/ahd.env (mode 600), starts the desk, creates the preview
 demo/live.sh remote     # drives one Ledgerly case against the hosted desk
 ```
 
@@ -49,7 +49,7 @@ Not verified against a live account when written. Check these on the first deplo
   in memory, so a full stop loses cases.
 - Whether the preview needs a platform token on top of ours. The script makes the preview public and
   relies on `AHD_API_TOKEN`.
-- The desk sandbox holds your keys in `/app/.env`. Use a spend-limited Anthropic key, and delete the
+- The desk sandbox holds your keys in `/app/ahd.env`. Use a spend-limited Anthropic key, and delete the
   `ahd-desk` sandbox and rotate the keys after judging.
 
 ## Path B: deploy the edge on Manufact
