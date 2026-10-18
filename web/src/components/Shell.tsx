@@ -26,6 +26,10 @@ const Icon = {
   endpoints: 'M6 7l-3 3 3 3m8-6l3 3-3 3M11 4l-2 12',
   agent: 'M4 4h12v9H8l-4 3z',
   install: 'M10 3v10m0 0l-4-4m4 4l4-4M4 17h12',
+  theater: 'M5 4l11 6-11 6z',
+  memory: 'M4 5c0-1.1 2.7-2 6-2s6 .9 6 2-2.7 2-6 2-6-.9-6-2zm0 0v5c0 1.1 2.7 2 6 2s6-.9 6-2V5M4 10v5c0 1.1 2.7 2 6 2s6-.9 6-2v-5',
+  blaxel: 'M3 4h6v6H3zm8 0h6v6h-6zM3 12h6v4H3zm8 0h6v4h-6z',
+  armature: 'M10 3l7 4v6l-7 4-7-4V7zm0 0v14M3 7l7 4 7-4',
   staff: 'M10 2l6 3v5c0 4-3 6.5-6 8-3-1.5-6-4-6-8V5z',
 };
 
@@ -88,6 +92,13 @@ function Sidebar({ onNav }: { onNav?: () => void }) {
         <Item to="/app/billing" icon={Icon.billing}>Billing</Item>
         <Item to="/app/settings" icon={Icon.settings}>Settings</Item>
       </div>
+      <div className="flex flex-col gap-0.5">
+        <div className="mb-1 px-2.5 text-label font-medium uppercase text-muted">Under the hood</div>
+        <Item to="/app/theater" icon={Icon.theater}>Case Theater</Item>
+        <Item to="/app/memory" icon={Icon.memory}>Fix memory</Item>
+        <Item to="/app/blaxel" icon={Icon.blaxel}>Blaxel</Item>
+        <Item to="/app/armature" icon={Icon.armature}>Armature</Item>
+      </div>
       <div>
         <div className="mb-1 px-2.5 text-label font-medium uppercase text-muted">Pinned</div>
         {pinned && (
@@ -131,7 +142,7 @@ function CommandSearch({ onClose }: { onClose: () => void }) {
     const approveId = live.on ? tickets.find((t) => t.stage === 'awaiting_approval')?.id : HERO_ID;
     const pages = [
       ['Home', '/app'], ['Tickets', '/app/tickets'], ['Agents', '/app/agents'], ['Endpoints', '/app/endpoints'], ['Reports', '/app/reports'],
-      ['Billing', '/app/billing'], ['Settings', '/app/settings'], ['Authority envelope', '/app/settings?s=authority'], ['Stack', '/app/settings?s=stack'],
+      ['Billing', '/app/billing'], ['Settings', '/app/settings'], ['Case Theater', '/app/theater'], ['Fix memory', '/app/memory'], ['Blaxel sandboxes', '/app/blaxel'], ['Armature feed', '/app/armature'], ['Authority envelope', '/app/settings?s=authority'], ['Stack', '/app/settings?s=stack'],
       ['Agent help page', '/agents'], ['Install flow', '/install'], ['Staff ops', '/staff'],
       ...(approveId ? [['Approve by text (phone)', `/approve/${approveId}`]] : []),
     ].map(([label, to]) => ({ kind: 'Page', label, sub: '', to }));

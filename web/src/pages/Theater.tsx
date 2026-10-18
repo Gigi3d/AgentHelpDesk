@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ApiError, getCase, listCases, reportProblem, replyApproval, runCase, type CaseView } from '../lib/api';
-import { Logo } from '../components/Shell';
 import { Stage } from '../theater/Stage';
 import { deriveSteps, isTerminal, type Ev, type StepKey, type StepState } from '../theater/steps';
 import { cx } from '../components/ui';
 
 const DOT: Record<StepState, string> = {
-  pending: 'border-[#26335C] bg-transparent',
-  active: 'border-[#6C8CFF] bg-[#6C8CFF] animate-pulse',
-  done: 'border-[#34D399] bg-[#34D399]',
-  failed: 'border-[#F87171] bg-[#F87171]',
-  skipped: 'border-[#26335C] bg-[#26335C]',
+  pending: 'border-line bg-transparent',
+  active: 'border-blue bg-blue animate-pulse',
+  done: 'border-success bg-success',
+  failed: 'border-error bg-error',
+  skipped: 'border-line bg-line',
 };
 
 const msText = (ms: number | null) => (ms === null || ms <= 0 ? '' : ms < 1000 ? `${Math.round(ms)} ms` : `${(ms / 1000).toFixed(1)} s`);
@@ -52,7 +51,7 @@ export default function Theater() {
       .then((l) => {
         if (stop || l.cases.length === 0) return;
         const newest = [...l.cases].sort((a, b) => b.created_at.localeCompare(a.created_at))[0]!;
-        nav(`/theater/${newest.id}`, { replace: true });
+        nav(`/app/theater/${newest.id}`, { replace: true });
       })
       .catch((e) => !stop && setError(e instanceof Error ? e.message : String(e)));
     return () => {
@@ -116,7 +115,7 @@ export default function Theater() {
     try {
       const receipt = await reportProblem({ ...SAMPLE_REPORT, idempotency_key: `theater-${Date.now()}` });
       await runCase(receipt.case_id);
-      nav(`/theater/${receipt.case_id}`);
+      nav(`/app/theater/${receipt.case_id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -149,41 +148,39 @@ export default function Theater() {
   const awaiting = view?.status === 'awaiting_approval' && view.approval && view.approval.decision === null;
 
   return (
-    <div className="min-h-screen bg-[#0B1020] text-[#E8ECF6]">
-      <header className="mx-auto flex max-w-[1180px] flex-wrap items-center justify-between gap-3 px-4 py-4">
-        <Link to="/app" className="inline-flex items-center"><Logo dark /></Link>
-        <div className="flex items-center gap-3 text-[13px] text-[#8C97B2]">
+    <div>
+      <header className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-title font-semibold text-ink">Case Theater</h1>
+        <div className="flex items-center gap-3 text-[13px] text-muted">
           {view && (
             <>
               <span className="font-mono">{view.case.id}</span>
-              <span className={cx('rounded-full px-2 py-0.5 text-[12px] font-medium', view.status === 'closed' ? 'bg-[#34D399]/15 text-[#34D399]' : view.status === 'escalated' ? 'bg-[#F87171]/15 text-[#F87171]' : 'bg-[#6C8CFF]/15 text-[#6C8CFF]')}>
+              <span className={cx('rounded-full px-2 py-0.5 text-[12px] font-medium', view.status === 'closed' ? 'bg-success-tint text-success-text' : view.status === 'escalated' ? 'bg-error-tint text-error-text' : 'bg-blue-tint text-blue-text')}>
                 {view.status.replace('_', ' ')}
               </span>
-              <Link to={`/app/tickets/${view.case.id}`} className="underline underline-offset-4 hover:text-white">Open ticket</Link>
+              <Link to={`/app/tickets/${view.case.id}`} className="underline underline-offset-4 hover:text-ink">Open ticket</Link>
             </>
           )}
-          <Link to="/memory" className="underline underline-offset-4 hover:text-white">Memory</Link>
-          <Link to="/blaxel" className="underline underline-offset-4 hover:text-white">Blaxel</Link>
-          <button onClick={startDemo} disabled={busy} className="rounded-full bg-[#E6007A] px-3.5 py-1.5 text-[13px] font-semibold text-white transition hover:bg-[#FF2D87] disabled:opacity-50">
+          <button onClick={startDemo} disabled={busy} className="rounded-full bg-pink px-3.5 py-1.5 text-[13px] font-semibold text-white transition hover:bg-pink-hover disabled:opacity-50">
             {busy ? 'Starting' : 'Run the Ledgerly case'}
           </button>
         </div>
       </header>
 
       {!view && (
-        <main className="mx-auto max-w-[640px] px-4 py-28 text-center">
+        <main className="mx-auto max-w-[640px] py-16 text-center">
           <h1 className="text-[28px] font-semibold tracking-tight">Watch a case run inside its sandbox</h1>
-          <p className="mx-auto mt-3 max-w-[48ch] text-[15px] leading-relaxed text-[#8C97B2]">
+          <p className="mx-auto mt-3 max-w-[48ch] text-[15px] leading-relaxed text-muted">
             Every step you see is read from the desk’s own record of the case. Run the Ledgerly case to see a real one, or open any ticket from the console.
           </p>
-          {error && <p className="mt-6 text-[14px] text-[#F87171]">{error}</p>}
+          {error && <p className="mt-6 text-[14px] text-error-text">{error}</p>}
         </main>
       )}
 
       {view && focus && (
-        <main className="mx-auto grid max-w-[1180px] gap-5 px-4 pb-16 lg:grid-cols-[minmax(0,1fr)_340px]">
+        <main className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
           <section aria-live="polite">
-            <div className="overflow-hidden rounded-2xl border border-[#26335C] bg-[#0B1020] shadow-[0_24px_60px_-20px_rgba(0,0,0,.6)]">
+            <div className="overflow-hidden rounded-2xl border border-line bg-[#0B1020] shadow-pop">
               <div className="aspect-[800/440] w-full">
                 <Stage
                   focus={focusKey}
@@ -202,55 +199,55 @@ export default function Theater() {
             </div>
             <div className="mt-5 flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-[60ch]">
-                <h1 className="text-[24px] font-semibold leading-8 tracking-tight">{focus.title}</h1>
-                <p className="mt-1 text-[15px] leading-relaxed text-[#8C97B2]">{focus.note ?? focus.caption}</p>
+                <h2 className="text-[20px] font-semibold leading-7 text-ink">{focus.title}</h2>
+                <p className="mt-1 text-[15px] leading-relaxed text-muted">{focus.note ?? focus.caption}</p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 {awaiting && (
                   <>
-                    <button onClick={() => void decide('yes')} disabled={busy} className="rounded-full bg-[#34D399] px-4 py-2 text-[14px] font-semibold text-[#0B1020] hover:brightness-110 disabled:opacity-50">Approve the change</button>
-                    <button onClick={() => void decide('no')} disabled={busy} className="rounded-full border border-[#26335C] px-4 py-2 text-[14px] font-semibold hover:bg-white/5 disabled:opacity-50">Reject</button>
+                    <button onClick={() => void decide('yes')} disabled={busy} className="rounded-full bg-success px-4 py-2 text-[14px] font-semibold text-white hover:brightness-110 disabled:opacity-50">Approve the change</button>
+                    <button onClick={() => void decide('no')} disabled={busy} className="rounded-full border border-line px-4 py-2 text-[14px] font-semibold hover:bg-surface disabled:opacity-50">Reject</button>
                   </>
                 )}
-                <button onClick={playBack} className="rounded-full border border-[#26335C] px-3.5 py-2 text-[13px] font-medium hover:bg-white/5">Play back</button>
-                {!follow && <button onClick={() => { stopPlay(); setFollow(true); }} className="rounded-full border border-[#26335C] px-3.5 py-2 text-[13px] font-medium hover:bg-white/5">Follow live</button>}
+                <button onClick={playBack} className="rounded-full border border-line px-3.5 py-2 text-[13px] font-medium hover:bg-surface">Play back</button>
+                {!follow && <button onClick={() => { stopPlay(); setFollow(true); }} className="rounded-full border border-line px-3.5 py-2 text-[13px] font-medium hover:bg-surface">Follow live</button>}
               </div>
             </div>
-            {error && <p className="mt-4 text-[13px] text-[#F87171]">{error}</p>}
+            {error && <p className="mt-4 text-[13px] text-error-text">{error}</p>}
 
-            <div className="mt-6 rounded-xl border border-[#26335C] bg-[#121A33] p-4">
-              <div className="flex items-baseline justify-between text-[13px] text-[#8C97B2]">
+            <div className="mt-6 rounded-xl border border-line bg-white p-4">
+              <div className="flex items-baseline justify-between text-[13px] text-muted">
                 <span>What the desk recorded for this step</span>
                 <span className="font-mono">{focus.event ? `${focus.event.tool} · ${focus.event.action} · ${focus.event.result}${focus.ms !== null ? ` · ${msText(focus.ms)}` : ''}` : 'nothing yet'}</span>
               </div>
-              <pre className="mt-3 max-h-56 overflow-auto whitespace-pre-wrap break-words font-mono text-[12px] leading-5 text-[#C5CCE0]">
+              <pre className="mt-3 max-h-56 overflow-auto whitespace-pre-wrap break-words font-mono text-[12px] leading-5 text-ink">
                 {focus.event ? JSON.stringify(focus.event.payload, null, 2).slice(0, 1400) : 'This step has not happened yet. This page checks every two seconds.'}
               </pre>
             </div>
           </section>
 
           <aside>
-            <ol className="relative space-y-1 rounded-2xl border border-[#26335C] bg-[#121A33] p-3">
+            <ol className="relative space-y-1 rounded-2xl border border-line bg-white p-3">
               {steps.map((s) => (
                 <li key={s.key}>
                   <button
                     onClick={() => { stopPlay(); setFollow(false); setPicked(s.key); }}
                     aria-current={s.key === focusKey ? 'step' : undefined}
-                    className={cx('flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors', s.key === focusKey ? 'bg-white/[.07]' : 'hover:bg-white/[.04]')}
+                    className={cx('flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors', s.key === focusKey ? 'bg-blue-tint' : 'hover:bg-surface')}
                   >
                     <span aria-hidden className={cx('h-3 w-3 shrink-0 rounded-full border-2', DOT[s.state])} />
-                    <span className={cx('flex-1 text-[14px] leading-5', s.state === 'pending' ? 'text-[#8C97B2]' : 'text-[#E8ECF6]')}>{s.title}</span>
-                    <span className="font-mono text-[12px] text-[#8C97B2]">{msText(s.ms)}</span>
+                    <span className={cx('flex-1 text-[14px] leading-5', s.state === 'pending' ? 'text-muted' : 'text-ink')}>{s.title}</span>
+                    <span className="font-mono text-[12px] text-muted">{msText(s.ms)}</span>
                     <span className="sr-only">{s.state}</span>
                   </button>
                 </li>
               ))}
             </ol>
-            <dl className="mt-4 space-y-2 rounded-2xl border border-[#26335C] bg-[#121A33] p-4 text-[13px]">
-              <div className="flex justify-between gap-4"><dt className="text-[#8C97B2]">Agent’s task</dt><dd className="text-right">{view.case.task}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-[#8C97B2]">Acknowledge by</dt><dd className="font-mono">{new Date(view.ack_by).toLocaleTimeString()}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-[#8C97B2]">Resolve by</dt><dd className="font-mono">{new Date(view.resolve_by).toLocaleTimeString()}</dd></div>
-              <div className="flex justify-between gap-4"><dt className="text-[#8C97B2]">Vendor mode</dt><dd>{view.vendor?.risk_policy?.replace('_', ' ') ?? 'unknown'}</dd></div>
+            <dl className="mt-4 space-y-2 rounded-2xl border border-line bg-white p-4 text-[13px]">
+              <div className="flex justify-between gap-4"><dt className="text-muted">Agent’s task</dt><dd className="text-right">{view.case.task}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted">Acknowledge by</dt><dd className="font-mono">{new Date(view.ack_by).toLocaleTimeString()}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted">Resolve by</dt><dd className="font-mono">{new Date(view.resolve_by).toLocaleTimeString()}</dd></div>
+              <div className="flex justify-between gap-4"><dt className="text-muted">Vendor mode</dt><dd>{view.vendor?.risk_policy?.replace('_', ' ') ?? 'unknown'}</dd></div>
             </dl>
           </aside>
         </main>

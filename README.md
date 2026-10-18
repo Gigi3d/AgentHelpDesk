@@ -214,7 +214,7 @@ The demo vendor is Ledgerly. It is a stand-in, it is not a real company, and eve
 
 ## One URL, three ways in
 
-`demo/live.sh deploy` puts the desk and the web console on one Blaxel URL. Open `<url>/theater`, paste the desk key once, and watch a case move through its sandbox steps (create, replay, vendor tests, Claude draft, fresh agent, approval, ship, retry, bill) driven by the case's real events.
+`demo/live.sh deploy` puts the desk and the web console on one Blaxel URL. Open `<url>/app`, paste the desk key once, and everything lives in one console: tickets, billing and settings up top, and under "Under the hood" the Case Theater (a case moving through its sandbox steps, driven by its real events), Fix memory, Blaxel (live sandboxes against your tier limit) and Armature (issues turned into cases). Old `/theater`, `/memory` and `/blaxel` links redirect into `/app`.
 
 Cases come in three ways:
 

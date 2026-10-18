@@ -881,3 +881,8 @@ export interface BlaxelActivity { real: boolean; activity: Array<{ at: string; a
 export const getBlaxelSandboxes = () => request<BlaxelSandboxes>('GET', '/v1/blaxel/sandboxes');
 export const deleteBlaxelSandbox = (name: string) => request<{ deleted: string }>('POST', '/v1/blaxel/delete', { name });
 export const getBlaxelActivity = () => request<BlaxelActivity>('GET', '/v1/blaxel/activity');
+
+export type ArmatureStatus = { simulated: boolean; note: string };
+export type ArmaturePull = { simulated: boolean; count: number; cases: { issue: string; case_id: string }[] };
+export const getArmature = () => request<ArmatureStatus>('GET', '/v1/feeds/armature');
+export const pullArmature = (limit = 3) => request<ArmaturePull>('POST', '/v1/feeds/armature/pull', { limit, run: true });

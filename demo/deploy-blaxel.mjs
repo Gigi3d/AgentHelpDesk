@@ -235,7 +235,7 @@ writeFileSync(TOKEN_FILE, JSON.stringify({ url, token: TOKEN, sandbox: NAME, vol
 chmodSync(TOKEN_FILE, 0o600);
 say(healthy ? '8. /healthz is up' : '8. /healthz did not answer in 60s. Check the process logs: bl or the console, sandbox ' + NAME);
 say('');
-say(`Console     ${url}/theater   (open it, paste the key: it is the token in demo/.deploy.json)`);
+say(`Console     ${url}/app/theater   (open it, paste the key: it is the token in demo/.deploy.json)`);
 say(`Desk URL   ${url}`);
 say(`Token      saved in demo/.deploy.json (gitignored); set AHD_DESK_TOKEN to it on the MCP edge`);
 say(`Claude connector URL  ${edgeUrl}/mcp   (Settings, Connectors, Add custom connector)`);

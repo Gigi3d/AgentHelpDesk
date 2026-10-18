@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getMemory, reportProblem, resumeMemory, runCase, type MemoryEntry, type MemoryList, type MemoryResume } from '../lib/api';
-import { Logo } from '../components/Shell';
 import { cx } from '../components/ui';
 
 const REPORT = {
@@ -22,7 +21,7 @@ function Proofs({ p }: { p: MemoryEntry['proofs'] }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {items.map(([label, ok]) => (
-        <span key={label} className={cx('rounded-full px-2 py-0.5 text-[12px]', ok ? 'bg-[#34D399]/15 text-[#34D399]' : 'bg-[#F87171]/15 text-[#F87171]')}>{label}</span>
+        <span key={label} className={cx('rounded-full px-2 py-0.5 text-[12px]', ok ? 'bg-success-tint text-success-text' : 'bg-error-tint text-error-text')}>{label}</span>
       ))}
     </div>
   );
@@ -46,57 +45,57 @@ function Entry({ e, onRun, busy }: { e: MemoryEntry; onRun: () => void; busy: bo
   };
 
   return (
-    <li className="rounded-2xl border border-[#26335C] bg-[#121A33] p-5">
+    <li className="rounded-2xl border border-line bg-white p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="font-mono text-[15px] text-white">
-            {e.signature.method} {e.signature.path} <span className="text-[#F87171]">{e.signature.status ?? ''}</span> <span className="text-[#8C97B2]">{e.signature.error}</span>
+          <p className="font-mono text-[15px] text-ink">
+            {e.signature.method} {e.signature.path} <span className="text-error-text">{e.signature.status ?? ''}</span> <span className="text-muted">{e.signature.error}</span>
           </p>
-          <p className="mt-1 text-[14px] text-[#8C97B2]">
-            Fixed in <span className="font-mono text-[#C9D2EA]">{e.path}</span>, proven by case{' '}
-            <Link className="font-mono underline underline-offset-4 hover:text-white" to={`/theater/${e.source_case}`}>{e.source_case.slice(0, 12)}</Link>, {ago(e.remembered_at)}
+          <p className="mt-1 text-[14px] text-muted">
+            Fixed in <span className="font-mono text-ink">{e.path}</span>, proven by case{' '}
+            <Link className="font-mono underline underline-offset-4 hover:text-ink" to={`/app/theater/${e.source_case}`}>{e.source_case.slice(0, 12)}</Link>, {ago(e.remembered_at)}
           </p>
         </div>
         <div className="text-right">
-          <p className="text-[28px] font-semibold leading-none text-white">{e.reuse_count}</p>
-          <p className="mt-1 text-[13px] text-[#8C97B2]">{e.reuse_count === 1 ? 'reuse' : 'reuses'}, no new model call</p>
+          <p className="text-[28px] font-semibold leading-none text-ink">{e.reuse_count}</p>
+          <p className="mt-1 text-[13px] text-muted">{e.reuse_count === 1 ? 'reuse' : 'reuses'}, no new model call</p>
         </div>
       </div>
 
-      <ol className="mt-4 list-decimal space-y-1 pl-5 text-[14px] leading-relaxed text-[#C9D2EA]">
+      <ol className="mt-4 list-decimal space-y-1 pl-5 text-[14px] leading-relaxed text-ink">
         {e.fix_steps.slice(0, 4).map((s, i) => <li key={i}>{s}</li>)}
       </ol>
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <Proofs p={e.proofs} />
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={wake} disabled={waking} className="rounded-full border border-[#26335C] px-3.5 py-1.5 text-[13px] font-medium text-[#C9D2EA] transition hover:border-[#6C8CFF] hover:text-white disabled:opacity-50">
+          <button onClick={wake} disabled={waking} className="rounded-full border border-line px-3.5 py-1.5 text-[13px] font-medium text-ink transition hover:border-blue hover:text-ink disabled:opacity-50">
             {waking ? 'Waking' : 'Wake the sandbox'}
           </button>
-          <button onClick={onRun} disabled={busy} className="rounded-full bg-[#E6007A] px-3.5 py-1.5 text-[13px] font-semibold text-white transition hover:bg-[#FF2D87] disabled:opacity-50">
+          <button onClick={onRun} disabled={busy} className="rounded-full bg-pink px-3.5 py-1.5 text-[13px] font-semibold text-white transition hover:bg-pink-hover disabled:opacity-50">
             {busy ? 'Starting' : 'Hit this failure again'}
           </button>
         </div>
       </div>
 
-      {err && <p className="mt-3 text-[13px] text-[#F87171]">{err}</p>}
+      {err && <p className="mt-3 text-[13px] text-error-text">{err}</p>}
       {res && (
-        <div className={cx('mt-4 rounded-xl border px-4 py-3 text-[14px]', res.state_preserved ? 'border-[#34D399]/40 bg-[#34D399]/10' : 'border-[#FBBF24]/40 bg-[#FBBF24]/10')}>
-          <p className="font-medium text-white">
+        <div className={cx('mt-4 rounded-xl border px-4 py-3 text-[14px]', res.state_preserved ? 'border-success/40 bg-success/10' : 'border-warning/40 bg-warning-tint')}>
+          <p className="font-medium text-ink">
             {res.found ? `Woke in ${res.resumed_ms} ms. ${res.state_preserved ? 'The fixed document is exactly as it was left.' : 'The document has changed.'}` : 'That sandbox is gone. The fix is still remembered.'}
           </p>
-          <p className="mt-1 font-mono text-[12px] text-[#8C97B2]">
+          <p className="mt-1 font-mono text-[12px] text-muted">
             {res.sandbox} · {res.real ? 'Blaxel' : 'simulated'} · {res.path}
             {res.actual_sha256 && ` · sha256 ${res.actual_sha256.slice(0, 12)}`}
           </p>
-          <p className="mt-1 text-[13px] text-[#C9D2EA]">{res.note}</p>
+          <p className="mt-1 text-[13px] text-ink">{res.note}</p>
         </div>
       )}
       {e.reused_by.length > 0 && (
-        <p className="mt-3 text-[13px] text-[#8C97B2]">
+        <p className="mt-3 text-[13px] text-muted">
           Reused by{' '}
           {e.reused_by.slice(-4).map((c, i) => (
-            <span key={c}>{i > 0 && ', '}<Link className="font-mono underline underline-offset-4 hover:text-white" to={`/theater/${c}`}>{c.slice(0, 12)}</Link></span>
+            <span key={c}>{i > 0 && ', '}<Link className="font-mono underline underline-offset-4 hover:text-ink" to={`/app/theater/${c}`}>{c.slice(0, 12)}</Link></span>
           ))}
         </p>
       )}
@@ -124,7 +123,7 @@ export default function Memory() {
     try {
       const r = await reportProblem({ ...REPORT, idempotency_key: `memory-${Date.now()}` });
       await runCase(r.case_id);
-      nav(`/theater/${r.case_id}`);
+      nav(`/app/theater/${r.case_id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -134,27 +133,22 @@ export default function Memory() {
 
   const entries = data?.entries ?? [];
   return (
-    <div className="min-h-screen bg-[#0B1020] text-[#E8ECF6]">
-      <header className="mx-auto flex max-w-[860px] flex-wrap items-center justify-between gap-3 px-4 py-4">
-        <Link to="/app" className="inline-flex items-center"><Logo dark /></Link>
-        <nav className="flex gap-4 text-[13px] text-[#8C97B2]"><Link to="/theater" className="underline underline-offset-4 hover:text-white">Case Theater</Link><Link to="/blaxel" className="underline underline-offset-4 hover:text-white">Blaxel</Link></nav>
-      </header>
-      <main className="mx-auto max-w-[860px] px-4 pb-20">
-        <h1 className="mt-8 text-[30px] font-semibold tracking-tight">Every fix the desk has proven, it keeps</h1>
-        <p className="mt-3 max-w-[60ch] text-[15px] leading-relaxed text-[#8C97B2]">
+    <div>
+        <h1 className="text-title font-semibold text-ink">Every fix the desk has proven, it keeps</h1>
+        <p className="mt-3 max-w-[60ch] text-[15px] leading-relaxed text-muted">
           When another agent fails the same way, the desk reuses the proven fix instead of asking the model again, then proves it again anyway. The sandbox that proved each fix stays in standby on Blaxel, with its files intact, until you wake it.
         </p>
         {data && (
-          <p className="mt-5 text-[14px] text-[#C9D2EA]">
+          <p className="mt-5 text-[14px] text-ink">
             {entries.length} remembered {entries.length === 1 ? 'fix' : 'fixes'}, {data.total_reuses} {data.total_reuses === 1 ? 'reuse' : 'reuses'}.
-            {data.sandboxes === 'simulated' && <span className="ml-2 text-[#FBBF24]">Sandboxes are simulated in this run.</span>}
+            {data.sandboxes === 'simulated' && <span className="ml-2 text-warning">Sandboxes are simulated in this run.</span>}
           </p>
         )}
-        {error && <p className="mt-4 text-[14px] text-[#F87171]">{error}</p>}
+        {error && <p className="mt-4 text-[14px] text-error-text">{error}</p>}
         {data && entries.length === 0 && (
-          <div className="mt-8 rounded-2xl border border-dashed border-[#26335C] p-8 text-center">
-            <p className="text-[15px] text-[#C9D2EA]">Nothing remembered yet. A fix is remembered once all three proofs pass.</p>
-            <button onClick={hitAgain} disabled={busy} className="mt-4 rounded-full bg-[#E6007A] px-4 py-2 text-[14px] font-semibold text-white transition hover:bg-[#FF2D87] disabled:opacity-50">
+          <div className="mt-8 rounded-2xl border border-dashed border-line p-8 text-center">
+            <p className="text-[15px] text-ink">Nothing remembered yet. A fix is remembered once all three proofs pass.</p>
+            <button onClick={hitAgain} disabled={busy} className="mt-4 rounded-full bg-pink px-4 py-2 text-[14px] font-semibold text-white transition hover:bg-pink-hover disabled:opacity-50">
               {busy ? 'Starting' : 'Run the Ledgerly case'}
             </button>
           </div>
@@ -162,7 +156,6 @@ export default function Memory() {
         <ul className="mt-6 space-y-4">
           {entries.map((e) => <Entry key={`${e.signature.key}-${e.path}`} e={e} onRun={hitAgain} busy={busy} />)}
         </ul>
-      </main>
     </div>
   );
 }
