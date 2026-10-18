@@ -154,7 +154,17 @@ if (mode === 'wipe') {
   await record();
   const { SandboxInstance } = await sdk();
   const name = deploy().sandbox || 'ahd-desk';
-  say(`\nDeleting sandbox ${name}. The ahd-data volume is kept; the sandbox disk is gone.`);
+  const hasVolume = Boolean(deploy().volume);
+  const backup = join(ROOT, 'demo/.persist-backup.json');
+  if (hasVolume) {
+    say(`\nDeleting sandbox ${name}. The ${deploy().volume} volume is kept; the sandbox disk is gone.`);
+  } else {
+    say(`\nNo Blaxel volume on this plan, so this run tests a file backup instead of Blaxel storage.`);
+    const sb = await SandboxInstance.get(name);
+    writeFileSync(backup, await sb.fs.read('/app/data/cases.json'));
+    process.env.AHD_RESTORE_FILE = backup; env.AHD_RESTORE_FILE = backup;
+    say(`Saved the desk data to demo/.persist-backup.json. Deleting sandbox ${name}.`);
+  }
   await SandboxInstance.delete(name);
   await new Promise((r) => setTimeout(r, 8000));
   say('Redeploying (this takes a few minutes)');

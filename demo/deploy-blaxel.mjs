@@ -84,11 +84,22 @@ if (existsSync(join(WEB, 'package.json')) && env.AHD_SKIP_WEB !== '1') {
 // one is replaced (its on-sandbox disk is lost once; every later deploy keeps the data).
 const VOLUME = env.AHD_DEPLOY_VOLUME || 'ahd-data';
 const REGION = env.BL_REGION || 'us-pdx-1';
-await VolumeInstance.createIfNotExists({ name: VOLUME, size: Number(env.AHD_DEPLOY_VOLUME_MB || 1024), region: REGION, labels: { app: 'agenthelpdesk' } });
-say(`   volume ${VOLUME} ready (${REGION})`);
+// Some tiers have a volume quota of 0. Then the desk still deploys, with its data on the sandbox disk
+// (it survives restarts and standby, not deletion), and `persist wipe` falls back to a file backup.
+let volumeOk = true;
+try {
+  await VolumeInstance.createIfNotExists({ name: VOLUME, size: Number(env.AHD_DEPLOY_VOLUME_MB || 1024), region: REGION, labels: { app: 'agenthelpdesk' } });
+  say(`   volume ${VOLUME} ready (${REGION})`);
+} catch (err) {
+  const text = JSON.stringify(err, Object.getOwnPropertyNames(Object(err)));
+  if (!/quota|429/i.test(text)) throw err;
+  volumeOk = false;
+  say('   NO VOLUME: this Blaxel plan has a volume quota of 0. Deploying without durable storage.');
+  say('   Data survives desk restarts and standby but not deleting the sandbox. Ask Blaxel to raise the volume quota (app.blaxel.ai, plan quotas) and redeploy.');
+}
 let prior = null;
 try { prior = await SandboxInstance.get(NAME); } catch { /* first deploy */ }
-if (prior && !(prior.spec?.volumes ?? []).some((v) => v.name === VOLUME)) {
+if (volumeOk && prior && !(prior.spec?.volumes ?? []).some((v) => v.name === VOLUME)) {
   say(`   sandbox ${NAME} has no data volume; replacing it so ${VOLUME} can be mounted`);
   await SandboxInstance.delete(NAME);
   await new Promise((r) => setTimeout(r, 8000));
@@ -96,13 +107,13 @@ if (prior && !(prior.spec?.volumes ?? []).some((v) => v.name === VOLUME)) {
 const sb = await SandboxInstance.createIfNotExists({
   name: NAME,
   region: REGION,
-  volumes: [{ name: VOLUME, mountPath: '/app/data', readOnly: false }],
+  ...(volumeOk ? { volumes: [{ name: VOLUME, mountPath: '/app/data', readOnly: false }] } : {}),
   image: IMAGE,
   memory: Number(env.AHD_DEPLOY_MEMORY_MB || 4096),
   ports: [{ name: 'desk', target: PORT, protocol: 'HTTP' }],
   labels: { app: 'agenthelpdesk', role: 'desk' },
 });
-say(`2. Sandbox ${NAME} ready (image ${IMAGE}, data volume ${VOLUME} at /app/data)`);
+say(`2. Sandbox ${NAME} ready (image ${IMAGE}, ${volumeOk ? `data volume ${VOLUME} at /app/data` : 'no data volume'})`);
 
 const sh = async (command, { timeout = 55 } = {}) => {
   const r = await sb.process.exec({ command, waitForCompletion: true, timeout });
@@ -126,6 +137,11 @@ if (webTgz) {
   await sh('rm -rf /app/web/dist && mkdir -p /app/web');
   await sb.fs.writeBinary('/app/web.tgz', readFileSync(webTgz));
   await sh('cd /app && tar -xzf web.tgz && rm web.tgz');
+}
+await sh('mkdir -p /app/data');
+if (env.AHD_RESTORE_FILE && existsSync(env.AHD_RESTORE_FILE)) {
+  await sb.fs.write('/app/data/cases.json', readFileSync(env.AHD_RESTORE_FILE, 'utf8'));
+  say('   restored desk data from backup file');
 }
 say('4. Code uploaded');
 const inst = await sb.process.exec({ command: 'cd /app/product && npm i --no-save @blaxel/core', name: 'npm-install', waitForCompletion: true, timeout: 55 });
@@ -215,7 +231,7 @@ for (let i = 0; i < 30 && !healthy; i++) {
   try { healthy = (await fetch(`${url}/healthz`, { signal: AbortSignal.timeout(5000) })).ok; } catch { /* not up yet */ }
   if (!healthy) await new Promise((r) => setTimeout(r, 2000));
 }
-writeFileSync(TOKEN_FILE, JSON.stringify({ url, token: TOKEN, sandbox: NAME, edge: `${edgeUrl}/mcp` }, null, 2));
+writeFileSync(TOKEN_FILE, JSON.stringify({ url, token: TOKEN, sandbox: NAME, volume: volumeOk ? VOLUME : null, edge: `${edgeUrl}/mcp` }, null, 2));
 chmodSync(TOKEN_FILE, 0o600);
 say(healthy ? '8. /healthz is up' : '8. /healthz did not answer in 60s. Check the process logs: bl or the console, sandbox ' + NAME);
 say('');
