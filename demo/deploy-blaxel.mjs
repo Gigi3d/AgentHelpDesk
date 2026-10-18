@@ -39,6 +39,7 @@ for (const k of ['BL_API_KEY', 'BL_WORKSPACE', 'ANTHROPIC_API_KEY']) if (!env[k]
 // The SDK reads these from process.env.
 process.env.BL_API_KEY = env.BL_API_KEY;
 process.env.BL_WORKSPACE = env.BL_WORKSPACE;
+if (env.BL_REGION) process.env.BL_REGION = env.BL_REGION;
 
 let SandboxInstance;
 try {
@@ -96,7 +97,7 @@ if (inst.exitCode && inst.exitCode !== 0) die(`npm install failed:\n${inst.logs 
 say('   dependencies installed');
 
 // 5. Environment: secrets stay in /app/.env (mode 600), never in the process list or the image.
-const keep = ['BL_API_KEY', 'BL_WORKSPACE', 'ANTHROPIC_API_KEY', 'STRIPE_SECRET_KEY', 'STRIPE_TEST_CUSTOMER_ID', 'INKBOX_API_KEY', 'PRIMITIVE_KEY', 'ARMATURE_KEY', 'AHD_APPROVALS_FALLBACK_EMAIL'];
+const keep = ['BL_API_KEY', 'BL_WORKSPACE', 'BL_REGION', 'ANTHROPIC_API_KEY', 'STRIPE_SECRET_KEY', 'STRIPE_TEST_CUSTOMER_ID', 'INKBOX_API_KEY', 'PRIMITIVE_KEY', 'ARMATURE_KEY', 'AHD_APPROVALS_FALLBACK_EMAIL'];
 const contact = env.AHD_APPROVALS_FALLBACK_EMAIL || 'you@example.com';
 const vendor = { id: 'ledgerly', name: 'Ledgerly', risk_policy: 'approve_first', report_contacts: [contact], test_command: 'cd /ahd/work && node --test test/*.test.mjs', stripe_customer_id: env.STRIPE_TEST_CUSTOMER_ID || '', payer_mode: 'vendor' };
 const lines = keep.filter((k) => env[k]).map((k) => `${k}=${JSON.stringify(env[k])}`);

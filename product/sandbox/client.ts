@@ -64,7 +64,22 @@ const SDK_MODULE = '@blaxel/core'; // package name per Blaxel quickstart; NOT bu
 let sdkPromise: Promise<BlaxelSdkLike> | null = null; // SDK handle cache — not case state
 
 export function messageOf(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
+  if (err instanceof Error) return err.message;
+  if (typeof err === 'string') return err;
+  // The Blaxel SDK can throw plain API error objects; String() on those prints '[object Object]'.
+  if (typeof err === 'object' && err !== null) {
+    const o = err as Record<string, unknown>;
+    for (const k of ['message', 'error', 'detail']) {
+      const v = o[k];
+      if (typeof v === 'string' && v) return typeof o['status'] === 'number' || typeof o['code'] !== 'undefined' ? `${v} (${String(o['status'] ?? o['code'])})` : v;
+    }
+    try {
+      return JSON.stringify(o).slice(0, 400);
+    } catch {
+      /* fall through */
+    }
+  }
+  return String(err);
 }
 
 export function asRecord(v: unknown): Record<string, unknown> | null {
@@ -171,7 +186,7 @@ export async function blxCreateIfNotExists(name: string): Promise<BlaxelSandboxL
     memory: Number(process.env.AHD_SANDBOX_MEMORY_MB ?? 2048),
     labels: { app: 'agenthelpdesk', case: name },
   };
-  const region = process.env.BLAXEL_REGION;
+  const region = process.env.BL_REGION ?? process.env.BLAXEL_REGION;
   if (region) opts['region'] = region;
   return asSandbox(await si.createIfNotExists(opts), 'sandbox.create');
 }
