@@ -1,5 +1,6 @@
 // feeds/register.ts: routes for the Armature feed.
 //   GET  /v1/feeds/armature          is the feed live or simulated, and the field-name caveat
+//   GET  /v1/feeds/armature/issues   open issues, read only (no cases opened)
 //   POST /v1/feeds/armature/pull     read open issues from Armature's MCP server and open a case for each
 //   POST /v1/feeds/armature/events   a client's wrapper (or a script) pushes issues in directly
 import { intake } from '../desk/intake.ts';
@@ -28,6 +29,11 @@ export function registerRoutes(router: Router, repo: Repository, deps: FeedDeps)
         : 'Live: reads list_issues and get_session from Armature MCP. The tool output schemas are not published, so field names are matched loosely.',
     },
   }));
+
+  router.add('GET', '/v1/feeds/armature/issues', async (ctx: Ctx): Promise<HttpResult> => {
+    const limit = Math.min(Math.max(Number(ctx.query?.get('limit') ?? 6) || 6, 1), 10);
+    return { status: 200, body: { simulated: source.simulated, issues: await source.listIssues(limit) } };
+  });
 
   router.add('POST', '/v1/feeds/armature/pull', async (ctx: Ctx): Promise<HttpResult> => {
     const b = (typeof ctx.body === 'object' && ctx.body !== null ? ctx.body : {}) as Record<string, unknown>;

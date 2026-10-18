@@ -166,6 +166,8 @@ export class FakeArmature implements ArmatureSource {
     return [
       { id: 'sim-1', title: 'Agents send x-api-key and get 401', summary: 'Agents follow the quickstart header and every call returns 401 although the key is valid.', cause: 'auth', sessions: 14, example_session_ids: ['sim-s1'] },
       { id: 'sim-2', title: 'List entries called with a page size over the cap', summary: 'limit=500 returns 422 with no hint of the maximum.', cause: 'error message', sessions: 6, example_session_ids: [] },
+      { id: 'sim-3', title: 'Paid report called without an X-PAYMENT header', summary: 'Agents call GET /v1/premium/report as the quickstart shows and get 402 with no hint of the header format.', cause: 'docs', sessions: 11, example_session_ids: [] },
+      { id: 'sim-4', title: 'x402 payment rejected as quote expired', summary: 'Agents reuse a quote from an earlier call and the paid endpoint answers 402 quote_expired.', cause: 'docs', sessions: 4, example_session_ids: [] },
     ].slice(0, limit);
   }
   async getSession(id: string): Promise<ArmatureSession | null> {

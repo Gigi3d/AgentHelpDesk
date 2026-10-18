@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getArmature, listCases, pullArmature, type ArmatureStatus, type Failure } from '../lib/api';
+import { getArmature, getArmatureIssues, listCases, pullArmature, type ArmatureIssue, type ArmatureStatus, type Failure } from '../lib/api';
 import { Button, Chip, StageChip } from '../components/ui';
 
 export default function Armature() {
   const [status, setStatus] = useState<ArmatureStatus | null>(null);
+  const [issues, setIssues] = useState<ArmatureIssue[]>([]);
   const [cases, setCases] = useState<Failure[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -13,6 +14,7 @@ export default function Armature() {
     try {
       const [s, l] = await Promise.all([getArmature(), listCases(100)]);
       setStatus(s);
+      getArmatureIssues().then((r) => setIssues(r.issues)).catch(() => undefined);
       setCases(l.cases.filter((c) => c.agent_id.startsWith('armature:')).sort((a, b) => b.created_at.localeCompare(a.created_at)));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -58,6 +60,26 @@ export default function Armature() {
           <p className="min-w-0 flex-1 text-[14px] text-muted">{status.note}</p>
         </section>
       )}
+
+      <section className="mb-6 rounded-card border border-line bg-white">
+        <h2 className="border-b border-line px-4 py-3 text-[15px] font-semibold text-ink">Open issues</h2>
+        {issues.length === 0 ? (
+          <p className="px-4 py-8 text-center text-[14px] text-muted">No open issues.</p>
+        ) : (
+          <ul className="divide-y divide-line">
+            {issues.map((i) => (
+              <li key={i.id} className="flex flex-wrap items-start gap-3 px-4 py-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[14px] font-medium text-ink">{i.title}</p>
+                  <p className="mt-0.5 text-[13px] text-muted">{i.summary}</p>
+                </div>
+                <Chip tone="gray">{i.cause}</Chip>
+                <span className="w-24 text-right text-[13px] text-muted">{i.sessions} sessions</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section className="rounded-card border border-line bg-white">
         <h2 className="border-b border-line px-4 py-3 text-[15px] font-semibold text-ink">Cases opened from Armature issues</h2>
