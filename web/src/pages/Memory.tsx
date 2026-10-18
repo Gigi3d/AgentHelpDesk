@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getMemory, reportProblem, resumeMemory, runCase, type MemoryEntry, type MemoryList, type MemoryResume } from '../lib/api';
+import { getMemory, getToken, reportProblem, resumeMemory, runCase, runPublicDemo, type MemoryEntry, type MemoryList, type MemoryResume } from '../lib/api';
 import { cx } from '../components/ui';
 
 const REPORT = {
@@ -121,6 +121,12 @@ export default function Memory() {
   const hitAgain = async () => {
     setBusy(true);
     try {
+      if (!getToken()) {
+        // No desk key: use the capped public demo (four failures, then a second agent that reuses the fixes).
+        await runPublicDemo();
+        nav('/app/scenarios');
+        return;
+      }
       const r = await reportProblem({ ...REPORT, idempotency_key: `memory-${Date.now()}` });
       await runCase(r.case_id);
       nav(`/app/theater/${r.case_id}`);
