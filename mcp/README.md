@@ -157,7 +157,7 @@ the per-connection diff caches in `watch()` are throwaway (a reconnect simply re
 payload mappers only — no ports, no processes, no clock reads, no secrets:
 
 ```bash
-node --experimental-strip-types --test src/desk-client.test.ts
+npx tsx --test src/desk-client.test.ts      # 35 tests; bare node cannot resolve the .js import specifiers
 ```
 
 It covers config resolution and its `bad_config` failures, the fake-mode report/poll/retry receipts,

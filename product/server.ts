@@ -266,6 +266,7 @@ for (const c of runtimeReport().components) {
 }
 
 const port = Number(process.env.PORT ?? 8787);
-server.listen(port, '127.0.0.1', () => {
-  process.stdout.write(`agenthelpdesk desk api listening on 127.0.0.1:${port}\n`);
+const host = process.env.HOST ?? '127.0.0.1'; // set HOST=0.0.0.0 only behind a trusted network or proxy: the API has no auth
+server.listen(port, host, () => {
+  process.stdout.write(`agenthelpdesk desk api listening on ${host}:${port}\n`);
 });
