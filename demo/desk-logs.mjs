@@ -15,6 +15,7 @@ if (existsSync(f)) for (const l of readFileSync(f, 'utf8').split('\n')) {
 const { SandboxInstance } = createRequire(join(ROOT, 'product/package.json'))('@blaxel/core');
 const sb = await SandboxInstance.get(process.env.AHD_DEPLOY_NAME || 'ahd-desk');
 console.log('sandbox status:', sb.status);
+console.log('volumes:', JSON.stringify((sb.spec?.volumes ?? []).map((v) => v.name)) || '[]');
 let procs = [];
 try { procs = await sb.process.list(); } catch (e) { console.log('process list failed:', e?.message ?? e); }
 for (const p of procs.filter((x) => ['desk', 'edge'].includes(x.name))) console.log(`process ${p.name}: status=${p.status} exit=${p.exitCode ?? '-'} restarts=${p.restartCount ?? '-'} pid=${p.pid ?? '-'}`);
