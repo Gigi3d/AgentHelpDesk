@@ -14,5 +14,5 @@ console.log(status.simulated ? 'Armature feed: SIMULATED (no ARMATURE_KEY on the
 const res = await fetch(`${url}/v1/feeds/armature/pull`, { method: 'POST', headers: h, body: JSON.stringify({ limit: 5 }) });
 const body = await res.json();
 if (!res.ok) { console.error(JSON.stringify(body)); process.exit(1); }
-for (const c of body.cases) console.log(`issue ${c.issue} -> case ${c.case_id}   ${url}/theater/${c.case_id}`);
+for (const c of body.cases) console.log(`issue ${c.issue} -> case ${c.case_id}   ${url}/app/theater/${c.case_id}`);
 if (body.cases.length === 0) console.log('No open issues.');

@@ -13,7 +13,7 @@
 // restricted, throwaway key and delete the sandboxes afterwards.
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, relative, sep } from 'node:path';
-import type { SandboxHandle, Vendor } from '../shared/types.ts';
+import type { Failure, SandboxHandle, Vendor } from '../shared/types.ts';
 
 const SKIP_DIRS: readonly string[] = ['node_modules', '.git'];
 const MAX_FILE_BYTES = 200_000;
@@ -62,11 +62,30 @@ export interface ProvisionOptions {
   dir: string;
   /** Written to SECRET_KEY_PATH when non-empty. */
   anthropicKey?: string;
+  /** Optional directory of per-scenario overlays: `<overlays>/<error code>/...` mirrors the
+   * sandbox root and is uploaded over the base tree when the failure's error code matches. It
+   * is how one vendor can show a different broken document for each kind of failure. */
+  overlays?: string;
 }
 
-export function makeProvisioner(opts: ProvisionOptions): (sb: SandboxHandle, vendor: Vendor, caseId: string) => Promise<void> {
-  return async (sb: SandboxHandle): Promise<void> => {
+/** The error code the agent saw, when it is a plain slug; used to pick a scenario overlay. */
+export function scenarioCodeOf(failure: Failure | undefined): string | null {
+  const res = failure?.response;
+  if (typeof res !== 'object' || res === null) return null;
+  const err = (res as Record<string, unknown>)['error'];
+  const code = typeof err === 'object' && err !== null ? (err as Record<string, unknown>)['code'] : undefined;
+  return typeof code === 'string' && /^[a-z0-9_]{1,64}$/.test(code) ? code : null;
+}
+
+export function makeProvisioner(opts: ProvisionOptions): (sb: SandboxHandle, vendor: Vendor, caseId: string, failure?: Failure) => Promise<void> {
+  return async (sb: SandboxHandle, _vendor?: Vendor, _caseId?: string, failure?: Failure): Promise<void> => {
     const uploaded = await uploadTree(sb, opts.dir);
+    const code = opts.overlays ? scenarioCodeOf(failure) : null;
+    if (code && opts.overlays) {
+      const overlay = join(opts.overlays, code);
+      const present = await stat(overlay).then((s) => s.isDirectory(), () => false);
+      if (present) uploaded.push(...(await uploadTree(sb, overlay)));
+    }
     if (uploaded.length === 0) throw new Error(`${STAGE}: '${opts.dir}' contains no files`);
     if (typeof opts.anthropicKey === 'string' && opts.anthropicKey.length > 0) {
       await sb.write(SECRET_KEY_PATH, opts.anthropicKey);

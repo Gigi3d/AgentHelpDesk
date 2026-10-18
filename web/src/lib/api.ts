@@ -851,3 +851,54 @@ export function failureToTicket(f: Failure, ctx: TicketContext): Ticket {
     ctx,
   );
 }
+
+// ---- fix memory ----
+export interface MemoryEntry {
+  signature: { key: string; vendor: string; method: string; path: string; status: number | null; error: string };
+  source_case: string;
+  sandbox: string;
+  path: string;
+  model: string;
+  remembered_at: string;
+  reuse_count: number;
+  reused_by: string[];
+  proofs: { replay: boolean; vendor_tests: boolean; fresh_agent: boolean };
+  fix_steps: string[];
+  content_sha256: string;
+}
+export interface MemoryList { sandboxes: 'blaxel' | 'simulated'; total_reuses: number; entries: MemoryEntry[] }
+export interface MemoryResume {
+  case_id: string; sandbox: string; real: boolean; found: boolean; resumed_ms: number;
+  state_preserved: boolean; path: string; expected_sha256: string; actual_sha256: string | null; note: string;
+}
+export const getMemory = () => request<MemoryList>('GET', '/v1/memory');
+export const resumeMemory = (caseId: string) => request<MemoryResume>('POST', '/v1/memory/resume', { case_id: caseId });
+
+// ---- Blaxel view ----
+export interface BlaxelSandbox { name: string; role: 'desk' | 'case' | 'fresh' | 'other'; case_id: string | null; status: string; created_at: string | null; memory_mb: number | null; region: string | null }
+export interface BlaxelSandboxes { real: boolean; limit: number; used: number; sandboxes: BlaxelSandbox[]; note?: string }
+export interface BlaxelActivity { real: boolean; activity: Array<{ at: string; action: string; sandbox: string; case_id: string; ms: number; ok: boolean; error: string | null }> }
+export const getBlaxelSandboxes = () => request<BlaxelSandboxes>('GET', '/v1/blaxel/sandboxes');
+export const deleteBlaxelSandbox = (name: string) => request<{ deleted: string }>('POST', '/v1/blaxel/delete', { name });
+export const getBlaxelActivity = () => request<BlaxelActivity>('GET', '/v1/blaxel/activity');
+
+export type ArmatureStatus = { simulated: boolean; note: string };
+export type ArmaturePull = { simulated: boolean; count: number; cases: { issue: string; case_id: string }[] };
+export const getArmature = () => request<ArmatureStatus>('GET', '/v1/feeds/armature');
+export const pullArmature = (limit = 3) => request<ArmaturePull>('POST', '/v1/feeds/armature/pull', { limit, run: true });
+
+export type ScenarioRun = {
+  case_id: string;
+  scenario: string | null;
+  agent: string;
+  status: CaseStage;
+  created_at: string;
+  ms: number | null;
+  memory_hit: boolean;
+  sandbox: string;
+  proofs: { replay: boolean; vendor_tests: boolean; fresh_agent: boolean } | null;
+  billable: boolean;
+};
+export type Scenario = { featured?: boolean; id: string; title: string; defect: string; sent: string; message: string; runs: ScenarioRun[] };
+export const getScenarios = () => request<{ scenarios: Scenario[] }>('GET', '/v1/scenarios');
+export const runScenarios = (agent: string, ids?: string[]) => request<{ started: { scenario: string; case_id: string }[] }>('POST', '/v1/scenarios/run', { agent, ids });

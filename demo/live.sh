@@ -8,9 +8,11 @@
 #   demo/live.sh stripe   test mode only: create the ahd_verified_fix meter and a test customer
 #   demo/live.sh inkbox   point the Inkbox identity's webhooks at the hosted desk (email and agent-to-agent intake)
 #   demo/live.sh armature pull open issues from Armature into cases on the hosted desk
+#   demo/live.sh scenarios [--only a,b] [--rounds 2]   run the simulated x402 failures with no human step; round 2 shows Fix Memory
 #   demo/live.sh cli run -- <cmd>   run a command; if it fails like an agent error, file a case
 #   demo/live.sh approve <case-id>   approve a case parked at the gate on the hosted desk
 #   demo/live.sh persist <mode>   prove state and data survive restart, standby and sandbox deletion (restart|standby|wipe)
+#   demo/live.sh cleanup [--yes]   list (or with --yes delete) the per-case ahd-* sandboxes; Tier 0 holds only 10
 #   demo/live.sh remote   run the case against the hosted desk (reads demo/.deploy.json)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -25,6 +27,7 @@ export BL_WORKSPACE="${BL_WORKSPACE:-${BLAXEL_WORKSPACE:-}}"
 export AHD_SANDBOX_IMAGE="${AHD_SANDBOX_IMAGE:-blaxel/base-image:latest}"
 export AHD_RESOLVER=claude
 export AHD_PROVISION_DIR="$ROOT/demo/sandbox-root"
+export AHD_SCENARIOS_DIR="$ROOT/demo/scenarios"
 export AHD_FRESH_BASELINE=1
 export AHD_REPRO_COMMAND='node /ahd/replay.mjs'
 export AHD_REPRO_EXPECT=nonzero
@@ -58,11 +61,14 @@ case "${1:-check}" in
   inkbox) exec node demo/inkbox-setup.mjs ;;
   cli) shift; exec node cli/ahd.mjs "$@" ;;
   armature) exec node demo/armature-pull.mjs ;;
+  scenarios) exec node demo/scenarios-run.mjs "${@:2}" ;;
   remote)
     [ -f demo/.deploy.json ] || { echo "no demo/.deploy.json: run demo/live.sh deploy first"; exit 1; }
     URL=$(node -p "require('./demo/.deploy.json').url"); export AHD_API_TOKEN=$(node -p "require('./demo/.deploy.json').token")
     exec node demo/run-live.mjs --base "$URL" "${@:2}" ;;
+  cleanup)
+    exec node demo/cleanup-sandboxes.mjs "${@:2}" ;;
   persist)
     exec node demo/persist-check.mjs "${@:2}" ;;
-  *) echo "usage: demo/live.sh persist [record|verify|restart|standby|wipe]|check|server|mcp|run|deploy|remote|stripe|inkbox|armature|cli|approve|logs"; exit 2 ;;
+  *) echo "usage: demo/live.sh persist [record|verify|restart|standby|wipe]|cleanup|check|server|mcp|run|deploy|remote|stripe|inkbox|armature|scenarios|cli|approve|logs"; exit 2 ;;
 esac

@@ -70,7 +70,7 @@ export function liveLoopDeps(env: NodeJS.ProcessEnv = process.env): Pick<LoopDep
   if (env['AHD_RESOLVER'] === 'claude') out.draft = makeClaudeResolver();
   const dir = env['AHD_PROVISION_DIR'];
   if (typeof dir === 'string' && dir.length > 0) {
-    out.provision = makeProvisioner({ dir, anthropicKey: env['ANTHROPIC_API_KEY'] ?? '' });
+    out.provision = makeProvisioner({ dir, anthropicKey: env['ANTHROPIC_API_KEY'] ?? '', overlays: env['AHD_SCENARIOS_DIR'] || undefined });
   }
   if (env['AHD_FRESH_BASELINE'] === '1') out.freshBaseline = true;
   return out;

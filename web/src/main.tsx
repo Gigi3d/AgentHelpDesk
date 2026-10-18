@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import './index.css';
 import { StoreProvider } from './lib/store';
 import { AppShell } from './components/Shell';
@@ -19,7 +19,16 @@ import Approve from './pages/Approve';
 import Staff from './pages/Staff';
 import NotFound from './pages/NotFound';
 import Theater from './pages/Theater';
+import Memory from './pages/Memory';
+import Blaxel from './pages/Blaxel';
+import Armature from './pages/Armature';
+import Scenarios from './pages/Scenarios';
 import { Gate } from './components/Gate';
+
+function OldTheater() {
+  const { id } = useParams();
+  return <Navigate to={`/app/theater/${id}`} replace />;
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -31,12 +40,20 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="/install" element={<Install />} />
             <Route path="/agents" element={<AgentSurfaces />} />
             <Route element={<Gate />}>
-            <Route path="/theater" element={<Theater />} />
-            <Route path="/theater/:id" element={<Theater />} />
+            <Route path="/theater" element={<Navigate to="/app/theater" replace />} />
+            <Route path="/theater/:id" element={<OldTheater />} />
+            <Route path="/memory" element={<Navigate to="/app/memory" replace />} />
+            <Route path="/blaxel" element={<Navigate to="/app/blaxel" replace />} />
             <Route path="/approve/:id" element={<Approve />} />
             <Route path="/staff" element={<Staff />} />
             <Route path="/app" element={<AppShell />}>
               <Route index element={<Home />} />
+              <Route path="theater" element={<Theater />} />
+              <Route path="theater/:id" element={<Theater />} />
+              <Route path="memory" element={<Memory />} />
+              <Route path="blaxel" element={<Blaxel />} />
+              <Route path="armature" element={<Armature />} />
+              <Route path="scenarios" element={<Scenarios />} />
               <Route path="tickets" element={<Tickets />} />
               <Route path="tickets/:id" element={<TicketPage />} />
               <Route path="agents" element={<Agents />} />

@@ -214,7 +214,7 @@ The demo vendor is Ledgerly. It is a stand-in, it is not a real company, and eve
 
 ## One URL, three ways in
 
-`demo/live.sh deploy` puts the desk and the web console on one Blaxel URL. Open `<url>/theater`, paste the desk key once, and watch a case move through its sandbox steps (create, replay, vendor tests, Claude draft, fresh agent, approval, ship, retry, bill) driven by the case's real events.
+`demo/live.sh deploy` puts the desk and the web console on one Blaxel URL. Open `<url>/app`, paste the desk key once, and everything lives in one console: tickets, billing and settings up top, and under "Under the hood" the Case Theater (a case moving through its sandbox steps, driven by its real events), Fix memory, Blaxel (live sandboxes against your tier limit) and Armature (issues turned into cases). Old `/theater`, `/memory` and `/blaxel` links redirect into `/app`.
 
 Cases come in three ways:
 
@@ -233,3 +233,14 @@ The desk keeps all its state (cases, events, proofs, approvals, outcomes, billin
 - `demo/live.sh persist restart` runs a case, restarts the desk process, and checks the case, events and billing are identical.
 - `demo/live.sh persist standby 90` idles so the sandbox can suspend, then checks again.
 - `demo/live.sh persist wipe` deletes the sandbox, redeploys, and checks the volume gave the case back.
+
+### x402 scenarios (no human in the loop)
+
+Ledgerly's paid premium report (`GET /v1/premium/report`) is gated by a simulated x402 payment: test mode, no wallet, nothing charged. Seven scenarios each break the quickstart in a different realistic way (wrong header, wrong scheme, wrong network, wrong recipient, short amount, replayed nonce, stale quote). The sandbox gets the matching broken quickstart from `demo/scenarios/<error code>/`, the desk reproduces the 402, fixes the docs, proves the fix three ways and ships it with nobody approving.
+
+```
+demo/live.sh deploy
+demo/live.sh scenarios            # 4 scenarios: round 1 (agent alpha, 4 sandboxes), then round 2 (agent beta) where Fix Memory reuses the fixes; --all runs all 7
+```
+
+Open `<url>/app/scenarios` to watch the board. Round 2 shows "memory hit, no model call" on every row while all three proofs still run. Each round opens four sandboxes (one per scenario), so use `--rounds 1` to keep it to four, and run `demo/live.sh cleanup --yes` between runs on Blaxel Tier 0 (10 sandboxes).

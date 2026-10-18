@@ -21,6 +21,7 @@ import { createHash } from 'node:crypto';
 import type { Failure } from '../shared/types.ts';
 import { clip } from './inspect.ts';
 import { recordStage } from './obs.ts';
+import { findMemoryDraft } from '../memory/memory.ts';
 import { draftFix } from './resolve.ts';
 import type { DraftContext, DraftFix, DraftFn } from './resolve.ts';
 
@@ -237,6 +238,29 @@ export function makeClaudeResolver(opts: ClaudeResolverOptions = {}): DraftFn {
         payload: { attempt, path: target, model: prior.model, note: 'a re-run reuses the stored draft instead of asking the model again' },
       });
       return build(base, prior, original);
+    }
+
+    // Memory: another case already proved a fix for this same failure on this same document. Reuse it
+    // instead of asking the model again. The proofs still run for this case.
+    const remembered = await findMemoryDraft(ctx.repo, f, target, sha256(original));
+    if (remembered) {
+      const stored: StoredDraft & { from_memory: string } = { ...remembered.draft, attempt, from_memory: remembered.source_case };
+      await recordStage(ctx.repo, {
+        ticketId: f.id,
+        stage: 'fix_drafted',
+        tool: 'resolver',
+        action: 'resolver.memory_hit',
+        payload: {
+          attempt,
+          path: target,
+          model: remembered.draft.model,
+          source_case: remembered.source_case,
+          signature: remembered.signature.key,
+          note: 'the desk has proven this fix before; reused without a new model call. The three proofs still run.',
+        },
+      });
+      await recordStage(ctx.repo, { ticketId: f.id, stage: 'fix_drafted', tool: 'resolver', action: 'resolver.draft', payload: stored });
+      return build(base, stored, original);
     }
 
     const apiKey = opts.apiKey ?? process.env['ANTHROPIC_API_KEY'] ?? '';

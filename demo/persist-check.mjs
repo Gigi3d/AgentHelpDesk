@@ -81,10 +81,13 @@ async function record() {
   const ran = await api('POST', '/v1/cases/run', { id });
   if (!ran.ok) die(`run failed: HTTP ${ran.status} ${JSON.stringify(ran.json).slice(0, 400)}`);
   const status = ran.json.result?.status;
-  say(`   case ${id} ran: ${status}`);
+  say(`   case ${id} ran: ${status} (${ran.json.result?.reason ?? 'no reason given'})`);
+  for (const pr of ran.json.result?.proof_details ?? []) say(`   ${pr.pass ? 'PASS' : 'FAIL'}  ${pr.proof}: ${String(pr.detail).replace(/\s+/g, ' ').slice(0, 140)}`);
+  if (ran.json.result?.error) say(`   error ${ran.json.result.error.code} @ ${ran.json.result.error.stage}: ${String(ran.json.result.error.message).slice(0, 200)}`);
   const view = await api('GET', `/v1/cases?id=${encodeURIComponent(id)}`);
   const list = await api('GET', '/v1/cases');
-  const fp = { case_id: id, status, hash: sha(view.json), view_keys: Object.keys(view.json).sort(), cases_in_desk: Array.isArray(list.json) ? list.json.length : (list.json.cases?.length ?? null), started_at: h.started_at, recorded_at: new Date().toISOString() };
+  const evs = Array.isArray(view.json.events) ? view.json.events.map((e) => sha(e)) : [];
+  const fp = { case_id: id, status, events: evs, hash: sha(view.json), view_keys: Object.keys(view.json).sort(), cases_in_desk: Array.isArray(list.json) ? list.json.length : (list.json.cases?.length ?? null), started_at: h.started_at, recorded_at: new Date().toISOString() };
   writeFileSync(FP, JSON.stringify(fp, null, 2));
   say(`   fingerprint saved (${fp.hash.slice(0, 12)}, desk started ${fp.started_at})`);
   return fp;
@@ -102,10 +105,18 @@ async function verify(label, { expectNewProcess = false } = {}) {
   const view = await api('GET', `/v1/cases?id=${encodeURIComponent(fp.case_id)}`);
   add('case is still there', view.ok, view.ok ? fp.case_id : `HTTP ${view.status}`);
   if (view.ok) {
-    const same = sha(view.json) === fp.hash;
-    add('case, events, proofs and billing are identical', same, same ? fp.hash.slice(0, 12) : `hash ${sha(view.json).slice(0, 12)} vs ${fp.hash.slice(0, 12)}`);
-    if (!same) say(`        keys now: ${Object.keys(view.json).sort().join(', ')}\n        keys then: ${fp.view_keys.join(', ')}`);
-
+    // The desk keeps working after the fingerprint (it can email the vendor and append a notify event), so
+    // "identical" is the wrong test. Every event recorded before must still be there, unchanged.
+    const now = Array.isArray(view.json.events) ? view.json.events.map((e) => sha(e)) : [];
+    const pool = new Map();
+    for (const h of now) pool.set(h, (pool.get(h) ?? 0) + 1);
+    let missing = 0;
+    for (const h of fp.events ?? []) { const c = pool.get(h) ?? 0; if (c > 0) pool.set(h, c - 1); else missing += 1; }
+    const added = now.length - (fp.events?.length ?? 0) + missing;
+    add('every recorded event is still there, unchanged', missing === 0, `${fp.events?.length ?? 0} recorded, ${missing} missing${added > 0 ? `, ${added} added since by the desk` : ''}`);
+    const statusNow = view.json.status ?? view.json.case?.status;
+    say(`        status: ${fp.status} then, ${statusNow} now`);
+    if (sha(view.json) === fp.hash) say('        (the whole case is byte-identical)');
   }
   const list = await api('GET', '/v1/cases');
   const n = Array.isArray(list.json) ? list.json.length : (list.json.cases?.length ?? null);

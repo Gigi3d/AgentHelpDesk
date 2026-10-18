@@ -61,7 +61,7 @@ const TOKEN = env.AHD_API_TOKEN || saved.token || randomBytes(24).toString('hex'
 // 1. Package the code (no node_modules, no env files, no git history).
 const dir = mkdtempSync(join(tmpdir(), 'ahd-deploy-'));
 const tgz = join(dir, 'ahd.tgz');
-execFileSync('tar', ['-czf', tgz, '--exclude=node_modules', '--exclude=.git', '--exclude=.env*', '--exclude=dist', '--exclude=.mcp-use', '-C', ROOT, 'product', 'demo/sandbox-root', 'mcp'], { stdio: 'inherit' });
+execFileSync('tar', ['-czf', tgz, '--exclude=node_modules', '--exclude=.git', '--exclude=.env*', '--exclude=dist', '--exclude=.mcp-use', '-C', ROOT, 'product', 'demo/sandbox-root', 'demo/scenarios', 'mcp'], { stdio: 'inherit' });
 say(`1. Packaged code (${(readFileSync(tgz).length / 1024).toFixed(0)} KB)`);
 
 // 1b. The console. Built here (live mode, same origin as the desk) and served by the desk itself,
@@ -161,7 +161,7 @@ lines.push(
   `AHD_PUBLIC_URL=${JSON.stringify(saved.url || '')}`,
   `HOST=0.0.0.0`, `PORT=${PORT}`, `AHD_DATA_FILE=/app/data/cases.json`,
   `AHD_SANDBOX_IMAGE=${JSON.stringify(env.AHD_SANDBOX_IMAGE || 'blaxel/base-image:latest')}`,
-  `AHD_RESOLVER=claude`, `AHD_PROVISION_DIR=/app/demo/sandbox-root`, `AHD_FRESH_BASELINE=1`,
+  `AHD_RESOLVER=claude`, `AHD_PROVISION_DIR=/app/demo/sandbox-root`, `AHD_SCENARIOS_DIR=/app/demo/scenarios`, `AHD_FRESH_BASELINE=1`,
   `AHD_REPRO_COMMAND='node /ahd/replay.mjs'`, `AHD_REPRO_EXPECT=nonzero`,
   `AHD_VENDOR_JSON=${JSON.stringify(JSON.stringify(vendor))}`,
 );
@@ -235,7 +235,7 @@ writeFileSync(TOKEN_FILE, JSON.stringify({ url, token: TOKEN, sandbox: NAME, vol
 chmodSync(TOKEN_FILE, 0o600);
 say(healthy ? '8. /healthz is up' : '8. /healthz did not answer in 60s. Check the process logs: bl or the console, sandbox ' + NAME);
 say('');
-say(`Console     ${url}/theater   (open it, paste the key: it is the token in demo/.deploy.json)`);
+say(`Console     ${url}/app/theater   (open it, paste the key: it is the token in demo/.deploy.json)`);
 say(`Desk URL   ${url}`);
 say(`Token      saved in demo/.deploy.json (gitignored); set AHD_DESK_TOKEN to it on the MCP edge`);
 say(`Claude connector URL  ${edgeUrl}/mcp   (Settings, Connectors, Add custom connector)`);
