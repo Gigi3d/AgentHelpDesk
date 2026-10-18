@@ -7,8 +7,7 @@ import { HERO_ID, useStore } from '../lib/store';
 import { API_BASE, reportProblem } from '../lib/api';
 import { now } from '../lib/clock';
 import { Code, JsonView } from '../components/Json';
-import { Logo } from '../components/Shell';
-import { Button, Card, CardHead, Chip, Label, Segmented } from '../components/ui';
+import { Button, Card, CardHead, Label, Segmented } from '../components/ui';
 
 const markdown = `# Ledgerly: help for agents
 
@@ -49,14 +48,7 @@ DELETE /v1/users/{id}/data deletes a user's data and returns a receipt.`;
 export default function AgentSurfaces() {
   const [view, setView] = useState<'md' | 'json'>('md');
   return (
-    <div className="min-h-screen bg-white">
-      <header className="flex h-14 items-center justify-between border-b border-line px-4 md:px-8">
-        <Link to="/"><Logo /></Link>
-        <div className="flex items-center gap-3 text-[13px]">
-          <Link to="/app" className="text-muted hover:text-ink">Console</Link>
-          <Chip tone="blue">Public · no login · no scripts</Chip>
-        </div>
-      </header>
+    <div>
       <div className="mx-auto max-w-[1120px] space-y-10 px-4 py-10 md:px-8">
         <div>
           <h1 className="text-title font-semibold">What agents see</h1>
