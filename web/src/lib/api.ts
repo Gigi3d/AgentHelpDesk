@@ -886,6 +886,8 @@ export const getBlaxelActivity = () => request<BlaxelActivity>('GET', '/v1/blaxe
 export type ArmatureStatus = { simulated: boolean; note: string };
 export type ArmaturePull = { simulated: boolean; count: number; cases: { issue: string; case_id: string }[] };
 export const getArmature = () => request<ArmatureStatus>('GET', '/v1/feeds/armature');
+export type ArmatureIssue = { id: string; title: string; summary: string; cause: string; sessions: number };
+export const getArmatureIssues = () => request<{ simulated: boolean; issues: ArmatureIssue[] }>('GET', '/v1/feeds/armature/issues?limit=6');
 export const pullArmature = (limit = 3) => request<ArmaturePull>('POST', '/v1/feeds/armature/pull', { limit, run: true });
 
 export type ScenarioRun = {
