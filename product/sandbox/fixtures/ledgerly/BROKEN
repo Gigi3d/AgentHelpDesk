@@ -1,0 +1,5 @@
+Seeded-failure marker for the offline FakeRunner (sandbox/fake.ts).
+
+Presence of this file in a cloned fixture repository sets the sandbox's "broken"
+flag: test-shaped commands (test / replay / fresh-agent) exit 1 until the resolver
+overwrites a seeded file (the fix), which clears the flag. No secrets here.
