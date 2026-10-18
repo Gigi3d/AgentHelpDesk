@@ -88,6 +88,29 @@ A deployed desk is open to look at, and anyone can press **Run the full demo** (
 - Fork returns 403 on this Blaxel plan, so the fresh-agent proof copies via archive.
 - Stripe is test mode only.
 
+## Pages
+
+All on the live desk. Reads are public; actions that change state need the desk key.
+
+| Page | What it shows |
+| --- | --- |
+| [Landing](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/) | What the product is |
+| [Console home](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app) | Cases, proofs and billing at a glance |
+| [x402 scenarios](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/scenarios) | Run the simulated payment failures |
+| [Case Theater](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/theater) | Watch one case run step by step |
+| [Fix memory](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/memory) | Proven fixes reused on repeat failures |
+| [Blaxel](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/blaxel) | Live sandboxes, state and activity |
+| [Armature](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/armature) | Open issues from the MCP server |
+| [Tickets](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/tickets) | Every case and its stage |
+| [Agents](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/agents) | Which agents reported what |
+| [Reports](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/reports) | Vendor reports |
+| [Billing](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/billing) | Stripe test-mode meter events |
+| [Settings](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/settings) | Vendor mode and risk policy |
+| [Endpoints](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/app/endpoints) | What agents call |
+| [Agent view](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/agents) | What a failing agent sees |
+| [Install flow](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/install) | Five ways to connect a vendor |
+| [Staff ops](https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run/staff) | Ops view |
+
 ## Sponsor docs
 
 One page per sponsor: what it does here, how it was verified, what is still open.
