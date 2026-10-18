@@ -204,6 +204,7 @@ function readBody(req: IncomingMessage): Promise<unknown> {
 }
 
 // The built console. AHD_WEB_DIR wins; otherwise ../web/dist next to this file, if it exists.
+const STARTED_AT = new Date().toISOString();
 const WEB_ROOT: string | null = (() => {
   const dir = process.env.AHD_WEB_DIR ?? resolvePath(import.meta.dirname, '..', 'web', 'dist');
   return existsSync(resolvePath(dir, 'index.html')) ? resolvePath(dir) : null;
@@ -231,7 +232,7 @@ const server = createServer(async (req, res: ServerResponse) => {
 
   if (req.method === 'GET' && url.pathname === '/healthz') {
     res.writeHead(200, { 'content-type': 'application/json' });
-    res.end(JSON.stringify({ ok: true, request_id: requestId }));
+    res.end(JSON.stringify({ ok: true, request_id: requestId, started_at: STARTED_AT, pid: process.pid, persisted: process.env['AHD_DATA_FILE'] ? true : false }));
     return;
   }
 

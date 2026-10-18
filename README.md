@@ -225,3 +225,11 @@ Cases come in three ways:
 ## No human in the loop
 
 The live Ledgerly vendor now runs in `autonomous` mode: when replay, vendor tests and the fresh-agent proof are all green, the fix ships and the agent retries with no approval step. A failed proof still holds the change and nothing is billed. To bring the human gate back, set `AHD_RISK_POLICY=approve_first` before `demo/live.sh deploy`.
+
+## State and storage on Blaxel
+
+The desk keeps all its state (cases, events, proofs, approvals, outcomes, billing) in `/app/data/cases.json`, and `demo/live.sh deploy` mounts a Blaxel persistent volume (`ahd-data`) there. The data therefore survives a desk restart, sandbox standby, and deletion of the sandbox itself. Prove it against the hosted desk:
+
+- `demo/live.sh persist restart` runs a case, restarts the desk process, and checks the case, events and billing are identical.
+- `demo/live.sh persist standby 90` idles so the sandbox can suspend, then checks again.
+- `demo/live.sh persist wipe` deletes the sandbox, redeploys, and checks the volume gave the case back.

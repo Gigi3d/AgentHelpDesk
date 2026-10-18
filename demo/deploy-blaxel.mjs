@@ -42,9 +42,10 @@ process.env.BL_WORKSPACE = env.BL_WORKSPACE;
 if (env.BL_REGION) process.env.BL_REGION = env.BL_REGION;
 
 let SandboxInstance;
+let VolumeInstance;
 try {
   const req = createRequire(join(ROOT, 'product/package.json'));
-  ({ SandboxInstance } = req('@blaxel/core'));
+  ({ SandboxInstance, VolumeInstance } = req('@blaxel/core'));
 } catch {
   die('@blaxel/core is not installed. Run: cd product && npm i --no-save @blaxel/core');
 }
@@ -77,14 +78,31 @@ if (existsSync(join(WEB, 'package.json')) && env.AHD_SKIP_WEB !== '1') {
 }
 
 // 2. Sandbox.
+// Durable storage: a Blaxel persistent volume mounted at /app/data holds cases.json (the desk's whole
+// state: cases, events, approvals, outcomes, billing). It outlives restarts, standby and even deletion of
+// the sandbox. A volume can only be attached when a sandbox is created, so an older sandbox without
+// one is replaced (its on-sandbox disk is lost once; every later deploy keeps the data).
+const VOLUME = env.AHD_DEPLOY_VOLUME || 'ahd-data';
+const REGION = env.BL_REGION || 'us-pdx-1';
+await VolumeInstance.createIfNotExists({ name: VOLUME, size: Number(env.AHD_DEPLOY_VOLUME_MB || 1024), region: REGION, labels: { app: 'agenthelpdesk' } });
+say(`   volume ${VOLUME} ready (${REGION})`);
+let prior = null;
+try { prior = await SandboxInstance.get(NAME); } catch { /* first deploy */ }
+if (prior && !(prior.spec?.volumes ?? []).some((v) => v.name === VOLUME)) {
+  say(`   sandbox ${NAME} has no data volume; replacing it so ${VOLUME} can be mounted`);
+  await SandboxInstance.delete(NAME);
+  await new Promise((r) => setTimeout(r, 8000));
+}
 const sb = await SandboxInstance.createIfNotExists({
   name: NAME,
+  region: REGION,
+  volumes: [{ name: VOLUME, mountPath: '/app/data', readOnly: false }],
   image: IMAGE,
   memory: Number(env.AHD_DEPLOY_MEMORY_MB || 4096),
   ports: [{ name: 'desk', target: PORT, protocol: 'HTTP' }],
   labels: { app: 'agenthelpdesk', role: 'desk' },
 });
-say(`2. Sandbox ${NAME} ready (image ${IMAGE})`);
+say(`2. Sandbox ${NAME} ready (image ${IMAGE}, data volume ${VOLUME} at /app/data)`);
 
 const sh = async (command, { timeout = 55 } = {}) => {
   const r = await sb.process.exec({ command, waitForCompletion: true, timeout });

@@ -10,6 +10,7 @@
 #   demo/live.sh armature pull open issues from Armature into cases on the hosted desk
 #   demo/live.sh cli run -- <cmd>   run a command; if it fails like an agent error, file a case
 #   demo/live.sh approve <case-id>   approve a case parked at the gate on the hosted desk
+#   demo/live.sh persist <mode>   prove state and data survive restart, standby and sandbox deletion (restart|standby|wipe)
 #   demo/live.sh remote   run the case against the hosted desk (reads demo/.deploy.json)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -61,5 +62,7 @@ case "${1:-check}" in
     [ -f demo/.deploy.json ] || { echo "no demo/.deploy.json: run demo/live.sh deploy first"; exit 1; }
     URL=$(node -p "require('./demo/.deploy.json').url"); export AHD_API_TOKEN=$(node -p "require('./demo/.deploy.json').token")
     exec node demo/run-live.mjs --base "$URL" "${@:2}" ;;
-  *) echo "usage: demo/live.sh check|server|mcp|run|deploy|remote|stripe|inkbox|armature|cli|approve|logs"; exit 2 ;;
+  persist)
+    exec node demo/persist-check.mjs "${@:2}" ;;
+  *) echo "usage: demo/live.sh persist [record|verify|restart|standby|wipe]|check|server|mcp|run|deploy|remote|stripe|inkbox|armature|cli|approve|logs"; exit 2 ;;
 esac
