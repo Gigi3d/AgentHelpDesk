@@ -4,7 +4,6 @@ import staff from '../data/staff.json';
 import { useStore } from '../lib/store';
 import { ago, usd } from '../lib/clock';
 import { Code } from '../components/Json';
-import { Logo } from '../components/Shell';
 import { CostIcon, HumanQueueIcon, IconTile, InstallStuckIcon, ShieldCheckIcon } from '../components/icons';
 import { Card, CardHead, Chip, SampleTag, Stat, StageChip, Tabs, changeLabel } from '../components/ui';
 
@@ -17,11 +16,7 @@ export default function Staff() {
   const needUs = tickets.filter((t) => t.stage === 'failed_proof' || t.stage === 'escalated' || events.some((e) => e.ticket_id === t.id && /handoff|human/.test(e.action)));
 
   return (
-    <div className="min-h-screen bg-white">
-      <header className="flex h-14 items-center justify-between bg-ink px-4 text-white md:px-8">
-        <div className="flex items-center gap-3"><Logo dark /><span className="rounded bg-white/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide">Staff only</span></div>
-        <Link to="/app" className="text-[13px] text-white/70 hover:text-white">Provider console →</Link>
-      </header>
+    <div>
       <div className="bg-warning-tint px-4 py-1.5 text-center text-[12.5px] text-warning">Read-only by default. Request bodies stay masked until opened with a reason, which is logged.</div>
       <div className="mx-auto max-w-[1120px] px-4 py-8 md:px-6">
         <h1 className="text-title font-semibold">Ops</h1>

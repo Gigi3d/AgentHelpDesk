@@ -37,8 +37,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing />} />
-            <Route path="/install" element={<Install />} />
-            <Route path="/agents" element={<AgentSurfaces />} />
             <Route path="/unlock" element={<Gate forceLocked />} />
             <Route element={<Gate />}>
             <Route path="/theater" element={<Navigate to="/app/theater" replace />} />
@@ -46,7 +44,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="/memory" element={<Navigate to="/app/memory" replace />} />
             <Route path="/blaxel" element={<Navigate to="/app/blaxel" replace />} />
             <Route path="/approve/:id" element={<Approve />} />
-            <Route path="/staff" element={<Staff />} />
+            <Route element={<AppShell />}>
+              <Route path="/install" element={<Install />} />
+              <Route path="/agents" element={<AgentSurfaces />} />
+              <Route path="/staff" element={<Staff />} />
+            </Route>
             <Route path="/app" element={<AppShell />}>
               <Route index element={<Home />} />
               <Route path="theater" element={<Theater />} />
@@ -64,8 +66,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               <Route path="settings" element={<Settings />} />
               <Route path="*" element={<NotFound />} />
             </Route>
+            <Route element={<AppShell />}>
+              <Route path="*" element={<NotFound />} />
             </Route>
-            <Route path="*" element={<NotFound />} />
+            </Route>
           </Routes>
         </BrowserRouter>
       </ErrorBoundary>

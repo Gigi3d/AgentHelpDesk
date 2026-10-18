@@ -2,7 +2,6 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import config from '../data/agenthelpdesk.json';
 import { Code, Diff, JsonView } from '../components/Json';
-import { Logo } from '../components/Shell';
 import { Button, Card, Chip, CopyButton, ProofIcon, SampleTag, Segmented, cx } from '../components/ui';
 import type { ProofStatus } from '../lib/types';
 
@@ -25,14 +24,7 @@ export default function Install() {
   const back = () => setRung(null);
   const github = () => setRung(4);
   return (
-    <div className="min-h-screen bg-white">
-      <header className="flex h-14 items-center justify-between border-b border-line px-4 md:px-8">
-        <Link to="/"><Logo /></Link>
-        <div className="flex items-center gap-3 text-[13px]">
-          <span className="hidden text-muted sm:inline">Every path is free until a fix is proven</span>
-          <Chip tone="amber" dot>Test mode</Chip>
-        </div>
-      </header>
+    <div>
       {rung === null && <Ladder onPick={setRung} />}
       {rung === 0 && <RungForward onBack={back} onNext={() => setRung(1)} onGithub={github} />}
       {rung === 1 && <RungErrorLine onBack={back} onNext={() => setRung(2)} onGithub={github} />}
