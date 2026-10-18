@@ -18,6 +18,18 @@ a Blaxel sandbox, has Claude fix the docs, proves the fix three ways, asks a hum
 
 x402 payment verification is an offline stub regardless of keys. Do not describe that lane as live.
 
+## Fastest path once the keys are in
+
+```sh
+cp demo/live.env.example demo/.env.live   # fill in what you have; the file is gitignored
+demo/live.sh check                        # finds the keys, probes Anthropic/Blaxel/Stripe, says what is real
+demo/live.sh server                       # terminal 1: desk with every keyed tool switched to real
+demo/live.sh run                          # terminal 2: one Ledgerly case end to end
+demo/live.sh mcp                          # terminal 3 (optional): MCP edge + public tunnel URL for Claude
+```
+
+The manual version of the same setup follows.
+
 ## Environment
 
 ```sh
