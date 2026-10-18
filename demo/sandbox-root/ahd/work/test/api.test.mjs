@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createLedgerlyServer, DEFAULT_KEY } from '../server.mjs';
+import { createLedgerlyServer, DEFAULT_KEY, X402 } from '../server.mjs';
 
 async function withServer(fn) {
   const server = createLedgerlyServer();
@@ -56,5 +56,53 @@ test('POST /v1/entries validates its body', async () => {
       body: JSON.stringify({ memo: 'no amount' }),
     });
     assert.equal(res.status, 422);
+  });
+});
+
+const pay = (over = {}) => {
+  const f = { scheme: X402.scheme, network: X402.network, amount: String(X402.amount), pay_to: X402.payTo, nonce: `n-${Math.random().toString(36).slice(2)}`, quote: X402.quote, ...over };
+  return Object.entries(f).map(([k, v]) => `${k}=${v}`).join(',');
+};
+
+test('the premium report answers 402 with the payment terms when unpaid', async () => {
+  await withServer(async (origin) => {
+    const res = await fetch(`${origin}/v1/premium/report`);
+    assert.equal(res.status, 402);
+    const body = await res.json();
+    assert.equal(body.error.code, 'payment_header_missing');
+    assert.equal(body.accepts[0].network, 'base-sepolia');
+  });
+});
+
+test('a correct simulated payment unlocks the premium report', async () => {
+  await withServer(async (origin) => {
+    const res = await fetch(`${origin}/v1/premium/report`, { headers: { 'x-payment': pay() } });
+    assert.equal(res.status, 200);
+    assert.equal((await res.json()).receipt.settled, true);
+  });
+});
+
+for (const [code, over] of [
+  ['unsupported_scheme', { scheme: 'upto' }],
+  ['wrong_network', { network: 'base' }],
+  ['wrong_recipient', { pay_to: '0xLedgerlyOld' }],
+  ['insufficient_amount', { amount: '1000' }],
+  ['quote_expired', { quote: 'q-2025-10-01' }],
+  ['nonce_reused', { nonce: 'n-demo-0001' }],
+]) {
+  test(`premium report refuses a payment that trips ${code}`, async () => {
+    await withServer(async (origin) => {
+      const res = await fetch(`${origin}/v1/premium/report`, { headers: { 'x-payment': pay(over) } });
+      assert.equal(res.status, 402);
+      assert.equal((await res.json()).error.code, code);
+    });
+  });
+}
+
+test('a nonce cannot be spent twice', async () => {
+  await withServer(async (origin) => {
+    const h = { 'x-payment': pay({ nonce: 'n-once' }) };
+    assert.equal((await fetch(`${origin}/v1/premium/report`, { headers: h })).status, 200);
+    assert.equal((await fetch(`${origin}/v1/premium/report`, { headers: h })).status, 402);
   });
 });

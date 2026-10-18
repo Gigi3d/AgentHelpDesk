@@ -886,3 +886,19 @@ export type ArmatureStatus = { simulated: boolean; note: string };
 export type ArmaturePull = { simulated: boolean; count: number; cases: { issue: string; case_id: string }[] };
 export const getArmature = () => request<ArmatureStatus>('GET', '/v1/feeds/armature');
 export const pullArmature = (limit = 3) => request<ArmaturePull>('POST', '/v1/feeds/armature/pull', { limit, run: true });
+
+export type ScenarioRun = {
+  case_id: string;
+  scenario: string | null;
+  agent: string;
+  status: CaseStage;
+  created_at: string;
+  ms: number | null;
+  memory_hit: boolean;
+  sandbox: string;
+  proofs: { replay: boolean; vendor_tests: boolean; fresh_agent: boolean } | null;
+  billable: boolean;
+};
+export type Scenario = { id: string; title: string; defect: string; sent: string; message: string; runs: ScenarioRun[] };
+export const getScenarios = () => request<{ scenarios: Scenario[] }>('GET', '/v1/scenarios');
+export const runScenarios = (agent: string, ids?: string[]) => request<{ started: { scenario: string; case_id: string }[] }>('POST', '/v1/scenarios/run', { agent, ids });

@@ -233,3 +233,14 @@ The desk keeps all its state (cases, events, proofs, approvals, outcomes, billin
 - `demo/live.sh persist restart` runs a case, restarts the desk process, and checks the case, events and billing are identical.
 - `demo/live.sh persist standby 90` idles so the sandbox can suspend, then checks again.
 - `demo/live.sh persist wipe` deletes the sandbox, redeploys, and checks the volume gave the case back.
+
+### x402 scenarios (no human in the loop)
+
+Ledgerly's paid premium report (`GET /v1/premium/report`) is gated by a simulated x402 payment: test mode, no wallet, nothing charged. Seven scenarios each break the quickstart in a different realistic way (wrong header, wrong scheme, wrong network, wrong recipient, short amount, replayed nonce, stale quote). The sandbox gets the matching broken quickstart from `demo/scenarios/<error code>/`, the desk reproduces the 402, fixes the docs, proves the fix three ways and ships it with nobody approving.
+
+```
+demo/live.sh deploy
+demo/live.sh scenarios            # round 1 (agent alpha), then round 2 (agent beta): Fix Memory reuses the proven fixes
+```
+
+Open `<url>/app/scenarios` to watch the board. Round 2 shows "memory hit, no model call" on every row while all three proofs still run. Each round opens one sandbox per scenario, so on Blaxel Tier 0 (10 sandboxes) use `--only` or run `demo/live.sh cleanup --yes` between rounds.

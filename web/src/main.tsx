@@ -22,6 +22,7 @@ import Theater from './pages/Theater';
 import Memory from './pages/Memory';
 import Blaxel from './pages/Blaxel';
 import Armature from './pages/Armature';
+import Scenarios from './pages/Scenarios';
 import { Gate } from './components/Gate';
 
 function OldTheater() {
@@ -52,6 +53,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               <Route path="memory" element={<Memory />} />
               <Route path="blaxel" element={<Blaxel />} />
               <Route path="armature" element={<Armature />} />
+              <Route path="scenarios" element={<Scenarios />} />
               <Route path="tickets" element={<Tickets />} />
               <Route path="tickets/:id" element={<TicketPage />} />
               <Route path="agents" element={<Agents />} />

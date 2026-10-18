@@ -93,7 +93,7 @@ export interface LoopDeps {
   /** Puts the vendor's checkout (and the proof tools) into the case sandbox. Called at
    * the START of EVERY run, so a re-run after an approval reproduces against the pristine
    * checkout rather than against the fix an earlier run already wrote. */
-  provision?: (sb: SandboxHandle, vendor: Vendor, caseId: string) => Promise<void>;
+  provision?: (sb: SandboxHandle, vendor: Vendor, caseId: string, failure?: Failure) => Promise<void>;
   /** Run the fresh-agent check on the UNFIXED docs first. The proof only means something
    * if the same fresh agent fails without the fix; the result is recorded as
    * `proof.fresh_agent_baseline` and never blocks the case. */
@@ -288,7 +288,7 @@ export async function runLoop(repo: Repository, caseId: string, deps: LoopDeps =
   if (deps.provision) {
     const provisionStarted = Date.now();
     try {
-      await deps.provision(sb, vendor, caseId);
+      await deps.provision(sb, vendor, caseId, stored);
     } catch (err) {
       return escalate('sandbox_provision_failed', toLoopError(err, 'sandbox_provision_failed', 'sandbox.provision'));
     }
