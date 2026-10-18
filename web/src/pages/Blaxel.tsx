@@ -65,9 +65,9 @@ export default function Blaxel() {
 
   return (
     <div>
-        <h1 className="text-title font-semibold text-ink">What the desk is doing in Blaxel</h1>
+        <h1 className="text-title font-semibold text-ink">Blaxel sandboxes</h1>
         <p className="mt-3 max-w-[62ch] text-[15px] leading-relaxed text-muted">
-          Every case gets its own sandbox, and the one that proved a fix stays in standby as the desk’s memory. This is the live list from your Blaxel workspace.
+          One sandbox per case. The ones that proved a fix stay in standby. Live from your Blaxel workspace.
         </p>
         {error && <p className="mt-4 text-[14px] text-error-text">{error}</p>}
         {sb && !sb.real && <p className="mt-4 text-[14px] text-warning">{sb.note}</p>}

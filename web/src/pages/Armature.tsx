@@ -44,7 +44,7 @@ export default function Armature() {
         <div className="max-w-[62ch]">
           <h1 className="text-title font-semibold text-ink">Armature</h1>
           <p className="mt-2 text-body text-muted">
-            Armature watches what people and agents do at a client’s MCP server. Its open issues become cases here, so the desk starts from what real users already struggled with.
+            Armature reports where people and agents struggle on an MCP server. Each open issue becomes a case.
           </p>
         </div>
         <Button variant="primary" onClick={pull} disabled={busy}>{busy ? 'Pulling issues' : 'Pull issues and open cases'}</Button>

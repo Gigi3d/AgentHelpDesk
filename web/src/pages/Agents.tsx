@@ -22,9 +22,9 @@ export function Agents() {
   };
   return (
     <div>
-      <PageHeader title="Agents" sub="Every agent that called your API. Helped means it got a verified answer; won means it then succeeded on a later call." />
+      <PageHeader title="Agents" sub="Agents that called your API. Helped: got a verified answer. Won: then succeeded." />
       <LiveSampleNote>
-        the desk API has no agent directory route, so this table — the names, 7-day call counts and won/helped/lost statuses — is the recorded set, not the agents behind the cases the desk is holding. The tickets themselves are live, and each one shows the agent ID it came in with.
+        this table is recorded data. Live cases show their agent ID on each ticket.
       </LiveSampleNote>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <Card className="overflow-x-auto">
@@ -122,9 +122,9 @@ export function Endpoints() {
   const outsideCount = tickets.filter((t) => outside.includes(t.endpoint)).length;
   return (
     <div>
-      <PageHeader title="Endpoints" sub="Read from your OpenAPI spec. Turn the desk on or off per endpoint and choose what may ship on its own. Risky endpoints start off." />
+      <PageHeader title="Endpoints" sub="From your OpenAPI spec. Turn the desk on or off per endpoint and set what may ship alone." />
       <LiveSampleNote>
-        the desk publishes no per-endpoint traffic route, so the call volumes, failure rates and approval modes here are the recorded config, and the desk itself holds one vendor-level risk policy. Open tickets and last fix are counted from the cases the desk is holding.
+        volumes, failure rates and modes are recorded config. Open tickets and last fix are live.
       </LiveSampleNote>
       <Card className="overflow-x-auto">
         <table className="w-full min-w-[860px] text-table">
@@ -156,10 +156,10 @@ export function Endpoints() {
           </tbody>
         </table>
       </Card>
-      <p className="mt-3 text-[13px] text-muted">Whatever the mode, nothing ships without three proofs. Changes here write to <span className="font-mono">agenthelpdesk.json</span> through a pull request.</p>
+      <p className="mt-3 text-[13px] text-muted">Nothing ships without three proofs. Changes here open a pull request on <span className="font-mono">agenthelpdesk.json</span> through a pull request.</p>
       {outside.length > 0 && (
         <p className="mt-2 text-[13px] text-muted">
-          {outsideCount} case{outsideCount === 1 ? '' : 's'} came in on <span className="font-mono text-[12.5px] text-ink">{outside.join(' · ')}</span> — not in your spec, so this table has no row for {outside.length === 1 ? 'it' : 'them'} and no per-endpoint mode applies. The desk took {outsideCount === 1 ? 'it' : 'them'} anyway, at your default mode.
+          {outsideCount} case{outsideCount === 1 ? '' : 's'} came in on <span className="font-mono text-[12.5px] text-ink">{outside.join(' · ')}</span> are not in your spec, so they use your default mode.
         </p>
       )}
       <div className="mt-4"><JsonView file="agenthelpdesk.json → endpoints (live preview)" data={eps} maxHeight={220} /></div>

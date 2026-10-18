@@ -134,9 +134,9 @@ export default function Memory() {
   const entries = data?.entries ?? [];
   return (
     <div>
-        <h1 className="text-title font-semibold text-ink">Every fix the desk has proven, it keeps</h1>
+        <h1 className="text-title font-semibold text-ink">Proven fixes the desk remembers</h1>
         <p className="mt-3 max-w-[60ch] text-[15px] leading-relaxed text-muted">
-          When another agent fails the same way, the desk reuses the proven fix instead of asking the model again, then proves it again anyway. The sandbox that proved each fix stays in standby on Blaxel, with its files intact, until you wake it.
+          A repeat failure reuses the proven fix with no model call, and all three proofs run again. The sandbox that proved it stays in standby on Blaxel.
         </p>
         {data && (
           <p className="mt-5 text-[14px] text-ink">

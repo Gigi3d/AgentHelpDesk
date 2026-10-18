@@ -125,7 +125,7 @@ export default function Scenarios() {
         <div className="max-w-[64ch]">
           <h1 className="text-title font-semibold text-ink">x402 scenarios</h1>
           <p className="mt-2 text-body text-muted">
-            Seven ways a paid call to Ledgerly goes wrong, all simulated and test mode, nothing is charged. The run button fires the four marked ones, so a round opens four sandboxes. Each runs end to end with nobody approving: the desk reproduces it in a Blaxel sandbox, fixes the docs, proves the fix three ways and ships it. Run them again as a second agent and the desk reuses what it already proved.
+            Simulated paid-call failures on Ledgerly. Nothing is charged. Each one runs with no human: reproduce, fix, three proofs, ship. Run it again as a second agent to see the desk reuse the fix.
           </p>
         </div>
         <div className="flex gap-2">

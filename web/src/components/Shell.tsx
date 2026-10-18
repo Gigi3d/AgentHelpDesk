@@ -68,14 +68,10 @@ function useRecent() {
 }
 
 function Sidebar({ onNav }: { onNav?: () => void }) {
-  const { tickets, live } = useStore();
+  const { tickets } = useStore();
   const waiting = tickets.filter((t) => t.stage === 'awaiting_approval').length;
   const recent = useRecent();
   const short = (id: string) => tickets.find((t) => t.id === id);
-  // The pin is a shortcut to the case that needs a human. Under the fixtures that is the
-  // recorded demo case; live it is whatever the desk is actually holding, because pinning a
-  // case id the live store has never seen just opens a not-found page.
-  const pinned = live.on ? tickets.find((t) => t.stage === 'awaiting_approval') : tickets.find((t) => t.id === HERO_ID);
   return (
     <nav className="flex h-full flex-col gap-6 px-3 py-4" onClick={onNav}>
       <Link to="/app" className="px-2.5"><Logo /></Link>
@@ -96,7 +92,7 @@ function Sidebar({ onNav }: { onNav?: () => void }) {
       </div>
       <SandboxRail />
       <div className="flex flex-col gap-0.5">
-        <div className="mb-1 px-2.5 text-label font-medium uppercase text-muted">Under the hood</div>
+        <div className="mb-1 px-2.5 text-label font-medium uppercase text-muted">How it works</div>
         <Item to="/app/scenarios" icon={Icon.scenarios}>x402 scenarios</Item>
         <Item to="/app/theater" icon={Icon.theater}>Case Theater</Item>
         <Item to="/app/memory" icon={Icon.memory}>Fix memory</Item>
@@ -104,16 +100,7 @@ function Sidebar({ onNav }: { onNav?: () => void }) {
         <Item to="/app/armature" icon={Icon.armature}>Armature</Item>
       </div>
       <div>
-        <div className="mb-1 px-2.5 text-label font-medium uppercase text-muted">Pinned</div>
-        {pinned && (
-          <Link to={`/app/tickets/${pinned.id}`} className="flex items-center gap-2 rounded-ctl px-2.5 py-1.5 text-[13px] text-ink hover:bg-surface">
-            <span className="text-pink">●</span><span className="truncate">{live.on ? pinned.title : 'Gift card won’t apply'}</span>
-          </Link>
-        )}
-        <Link to="/app/endpoints" className="flex items-center gap-2 rounded-ctl px-2.5 py-1.5 text-[13px] text-ink hover:bg-surface">
-          <span className="text-muted">◆</span><span className="truncate font-mono text-[12px]">POST /v1/checkout</span>
-        </Link>
-        {recent.length > 0 && <div className="mb-1 mt-3 px-2.5 text-label font-medium uppercase text-muted">Recent</div>}
+        {recent.length > 0 && <div className="mb-1 px-2.5 text-label font-medium uppercase text-muted">Recent</div>}
         {recent.map((id) => (
           <Link key={id} to={`/app/tickets/${id}`} className="block truncate rounded-ctl px-2.5 py-1 font-mono text-[12px] text-muted hover:bg-surface hover:text-ink">
             {id}<span className="ml-1 font-sans">· {short(id)?.endpoint.split(' ')[1]}</span>
@@ -193,7 +180,7 @@ function CommandSearch({ onClose }: { onClose: () => void }) {
 }
 
 function Shortcuts({ onClose }: { onClose: () => void }) {
-  const rows: [string, string][] = [['/', 'Search everything'], ['?', 'Show shortcuts'], ['J / K', 'Move through a ticket list'], ['Enter', 'Open the selected ticket'], ['A', 'Approve (asks to confirm on risky fixes)'], ['R', 'Reject with a reason'], ['G then H', 'Go Home'], ['G then T', 'Go to Tickets'], ['Esc', 'Close a dialog']];
+  const rows: [string, string][] = [['/', 'Search everything'], ['?', 'Show shortcuts'], ['J / K', 'Move through a ticket list'], ['Enter', 'Open the selected ticket'], ['A', 'Approve a held fix'], ['R', 'Reject with a reason'], ['G then H', 'Go Home'], ['G then T', 'Go to Tickets'], ['Esc', 'Close a dialog']];
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/20 px-4" onMouseDown={onClose}>
       <div className="w-full max-w-sm animate-fadein rounded-card border border-line bg-white p-5 shadow-pop" onMouseDown={(e) => e.stopPropagation()}>
@@ -251,7 +238,7 @@ export function LiveSampleNote({ children }: { children: ReactNode }) {
   if (!live.on) return null;
   return (
     <p className="mb-4 rounded-ctl border border-dashed border-muted/50 bg-surface px-3 py-2 text-[12.5px] leading-relaxed text-muted">
-      <span className="font-semibold text-ink">Recorded sample, not live:</span> {children}
+      <span className="font-semibold text-ink">Sample data:</span> {children}
     </p>
   );
 }
@@ -281,11 +268,11 @@ function LiveGate() {
       <h2 className="mt-2 text-[20px] font-semibold text-ink">{connecting ? 'Connecting to the desk API…' : 'The desk API is not answering'}</h2>
       <p className="mt-2 text-[14px] text-muted">
         {connecting ? (
-          <>Reading cases and tool events from <span className="font-mono">{live.url}</span>. Until the first poll answers there is nothing to count, so this console stays empty rather than showing fixtures as if they were live.</>
+          <>Reading cases from <span className="font-mono">{live.url}</span>. Until the first answer, this console stays empty rather than show sample data as live.</>
         ) : (
           <>
-            Cannot reach <span className="font-mono">{live.url}</span>. Start the desk with <span className="font-mono">node --experimental-strip-types server.ts</span> in <span className="font-mono">product/</span> (port 8787), or drop <span className="font-mono">VITE_LIVE=1</span> to run on the recorded fixtures.
-            <span className="mt-2 block text-[13px]">If it is running, the browser may still be blocked: the API answers the loopback dev ports (<span className="font-mono">5173</span>, <span className="font-mono">5180</span>, <span className="font-mono">5181</span>) by default, and any other origin has to be named in <span className="font-mono">AHD_CORS_ORIGINS</span>.</span>
+            Cannot reach <span className="font-mono">{live.url}</span>. Start the desk (<span className="font-mono">demo/live.sh server</span>), or drop <span className="font-mono">VITE_LIVE=1</span> to use sample data.
+            <span className="mt-2 block text-[13px]">Already running? Name this site in <span className="font-mono">AHD_CORS_ORIGINS</span>.</span>
           </>
         )}
       </p>
@@ -333,7 +320,7 @@ export function AppShell() {
             {live.on && live.state !== 'open' && !tickets.length ? <LiveGate /> : <div key={loc.pathname} className="animate-fadein"><Outlet /></div>}
           </main>
           <footer className="mx-auto max-w-[1120px] px-6 pb-8 text-[12px] text-muted">
-            Live-on-screen data reads from <span className="font-mono">tool_events</span>. Waiting {tickets.filter((t) => t.stage === 'awaiting_approval').length} · Press <Kbd>?</Kbd> for shortcuts.
+            Press <Kbd>?</Kbd> for shortcuts.
           </footer>
         </div>
       </div>
