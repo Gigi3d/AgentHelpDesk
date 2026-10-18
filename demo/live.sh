@@ -49,10 +49,11 @@ case "${1:-check}" in
     [ -d product/node_modules/@blaxel/core ] || (cd product && npm i --no-save @blaxel/core)
     exec node demo/deploy-blaxel.mjs ;;
   approve) exec node demo/approve.mjs "${2:-}" ;;
+  logs) exec node demo/desk-logs.mjs ;;
   stripe) exec node demo/stripe-setup.mjs ;;
   remote)
     [ -f demo/.deploy.json ] || { echo "no demo/.deploy.json: run demo/live.sh deploy first"; exit 1; }
     URL=$(node -p "require('./demo/.deploy.json').url"); export AHD_API_TOKEN=$(node -p "require('./demo/.deploy.json').token")
     exec node demo/run-live.mjs --base "$URL" "${@:2}" ;;
-  *) echo "usage: demo/live.sh check|server|mcp|run|deploy|remote|stripe|approve"; exit 2 ;;
+  *) echo "usage: demo/live.sh check|server|mcp|run|deploy|remote|stripe|approve|logs"; exit 2 ;;
 esac
