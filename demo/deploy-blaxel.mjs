@@ -106,7 +106,7 @@ const lines = keep.filter((k) => env[k]).map((k) => `${k}=${JSON.stringify(env[k
 lines.push(
   `BLAXEL_API_KEY=${JSON.stringify(env.BL_API_KEY)}`,
   `AHD_API_TOKEN=${JSON.stringify(TOKEN)}`,
-  `HOST=0.0.0.0`, `PORT=${PORT}`,
+  `HOST=0.0.0.0`, `PORT=${PORT}`, `AHD_DATA_FILE=/app/data/cases.json`,
   `AHD_SANDBOX_IMAGE=${JSON.stringify(env.AHD_SANDBOX_IMAGE || 'blaxel/base-image:latest')}`,
   `AHD_RESOLVER=claude`, `AHD_PROVISION_DIR=/app/demo/sandbox-root`, `AHD_FRESH_BASELINE=1`,
   `AHD_REPRO_COMMAND='node /ahd/replay.mjs'`, `AHD_REPRO_EXPECT=nonzero`,

@@ -1,6 +1,7 @@
 // AgentHelpDesk backend entrypoint. Dependency-free (node:http only).
 // Stateless by design: all state lives in the Repository, so N copies of this
 // process can sit behind a load balancer. Modules register their own routes.
+import { withPersistence } from './store/persist.ts';
 import { bearerOk } from './http-auth.ts';
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
 import { randomUUID } from 'node:crypto';
@@ -28,7 +29,7 @@ import { demoSeedRequested, seedDemo } from './demo-seed.ts';
 // Accept BL_API_KEY or BLAXEL_API_KEY before anything reads the sandbox key.
 normalizeBlaxelEnv();
 
-export const repo: Repository = new MemoryRepository();
+export const repo: Repository = withPersistence(new MemoryRepository(), process.env.AHD_DATA_FILE);
 
 const routes = new Map<string, Handler>();
 const router: Router = {
