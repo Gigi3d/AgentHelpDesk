@@ -82,6 +82,19 @@ A deployed desk is open to look at, and anyone can press **Run the full demo** (
 - Fork returns 403 on this Blaxel plan, so the fresh-agent proof copies via archive.
 - Stripe is test mode only.
 
+## Sponsor docs
+
+One page per sponsor: what it does here, how it was verified, what is still open.
+
+| Sponsor | Role | Doc |
+| --- | --- | --- |
+| Overview | The problem, the build, the sponsor stack | [Open](https://claude.ai/code/artifact/e3d820c7-dbce-47d8-b72c-05810a715ddf) |
+| Blaxel | Sandboxes, state and memory | [Open](https://claude.ai/code/artifact/cfa7f5e7-e518-4933-9fdb-31594a438ec0) |
+| Stripe | Meter event per verified fix | [Open](https://claude.ai/code/artifact/e3092901-93e4-4791-9550-5f5b5774718c) |
+| Inkbox | Approval gate and vendor reports | [Open](https://claude.ai/code/artifact/acdb329f-db80-422f-a6ea-a129e4ca83f8) |
+| Manufact | `report_problem` MCP server | [Open](https://claude.ai/code/artifact/8658974b-df81-47a9-83c7-774229c89cd0) |
+| Armature | Fresh-agent check | [Open](https://claude.ai/code/artifact/7f1b1f03-3697-4fdb-aa2c-84ffa80b92fc) |
+
 ## Layout
 
 ```
