@@ -6,6 +6,9 @@
 #   demo/live.sh run      drive one Ledgerly case through the running desk
 #   demo/live.sh deploy   host the desk in a Blaxel sandbox with a public preview URL (needs token gate)
 #   demo/live.sh stripe   test mode only: create the ahd_verified_fix meter and a test customer
+#   demo/live.sh inkbox   point the Inkbox identity's webhooks at the hosted desk (email and agent-to-agent intake)
+#   demo/live.sh armature pull open issues from Armature into cases on the hosted desk
+#   demo/live.sh cli run -- <cmd>   run a command; if it fails like an agent error, file a case
 #   demo/live.sh approve <case-id>   approve a case parked at the gate on the hosted desk
 #   demo/live.sh remote   run the case against the hosted desk (reads demo/.deploy.json)
 set -euo pipefail
@@ -51,9 +54,12 @@ case "${1:-check}" in
   approve) exec node demo/approve.mjs "${2:-}" ;;
   logs) exec node demo/desk-logs.mjs ;;
   stripe) exec node demo/stripe-setup.mjs ;;
+  inkbox) exec node demo/inkbox-setup.mjs ;;
+  cli) shift; exec node cli/ahd.mjs "$@" ;;
+  armature) exec node demo/armature-pull.mjs ;;
   remote)
     [ -f demo/.deploy.json ] || { echo "no demo/.deploy.json: run demo/live.sh deploy first"; exit 1; }
     URL=$(node -p "require('./demo/.deploy.json').url"); export AHD_API_TOKEN=$(node -p "require('./demo/.deploy.json').token")
     exec node demo/run-live.mjs --base "$URL" "${@:2}" ;;
-  *) echo "usage: demo/live.sh check|server|mcp|run|deploy|remote|stripe|approve|logs"; exit 2 ;;
+  *) echo "usage: demo/live.sh check|server|mcp|run|deploy|remote|stripe|inkbox|armature|cli|approve|logs"; exit 2 ;;
 esac

@@ -387,8 +387,8 @@ const stackMeta: Record<string, { role: string; metric: string; line: string }> 
   Blaxel: { role: 'A fresh sandbox per ticket where the fix is tried and proved', metric: 'Median failure → first proof', line: 'Without a sandbox, no fix is tried before a human reads the ticket' },
   Stripe: { role: 'Meters each verified fix and bills the provider', metric: 'Verified fixes billed', line: 'Pay for proven fixes, not for tickets opened' },
   Manufact: { role: 'Hosts report_problem as an MCP server any agent can call', metric: 'MCP calls that became tickets', line: 'One endpoint any agent can use, no custom SDK' },
-  Inkbox: { role: 'The desk’s identity; sends approval requests by text', metric: 'Approval texts sent', line: 'Approve a schema change from your phone' },
-  Armature: { role: 'Tests whether a fresh agent installs the desk unprompted', metric: 'Fresh-agent install eval', line: 'A fresh agent installs it from the docs alone' },
+  Inkbox: { role: 'The desk’s own mailbox and agent-to-agent address; approvals, escalations and updates go out as email', metric: 'Approvals answered by email', line: 'Approve a change from your inbox, or hand the desk a task from another agent' },
+  Armature: { role: 'Shows what people and agents do at a client’s MCP server; its open issues become cases', metric: 'Cases opened from Armature issues', line: 'The desk starts from what real users already struggled with' },
 };
 
 function Stack() {

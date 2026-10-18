@@ -16,6 +16,7 @@
 // `identity.send_text` SDK call; the cited quickstart names the SDK method, not an HTTP route.
 // Confirm with Inkbox and change it HERE ONLY — no other file in product/ touches the network
 // for approvals or reports.
+import { createHash } from 'node:crypto';
 import { HttpError, badRequest } from '../shared/http.ts';
 
 const STAGE = 'approvals.inkbox';
@@ -25,6 +26,10 @@ export type DeliveryChannel = 'text' | 'email';
 export interface InkboxConfig {
   apiKey: string | null;
   baseUrl: string;
+  /** Documented Mail API (inkbox.ai/docs/api/mail/messages): POST /mailboxes/{address}/messages. */
+  mailBaseUrl: string;
+  /** The identity's own mailbox, the From address of every email the desk sends. */
+  mailbox: string;
   timeoutMs: number;
   maxChars: number;
 }
@@ -85,6 +90,8 @@ export function readConfig(env: Env = process.env): InkboxConfig {
   return {
     apiKey: apiKey !== undefined && apiKey.trim() !== '' ? apiKey.trim() : null,
     baseUrl,
+    mailBaseUrl: (env['AHD_INKBOX_MAIL_BASE_URL'] ?? 'https://inkbox.ai/api/v1/mail').replace(/\/+$/, ''),
+    mailbox: (env['AHD_INKBOX_MAILBOX'] ?? 'agenthelpdesk@inkboxmail.com').trim(),
     timeoutMs: intFromEnv(env, 'AHD_INKBOX_TIMEOUT_MS', 8000, 500, 30000),
     maxChars: intFromEnv(env, 'AHD_INKBOX_MAX_CHARS', 1400, 160, 4000),
   };
@@ -187,6 +194,8 @@ function firstString(payload: unknown, keys: string[]): string | null {
 export class RealInkboxClient implements InkboxClient {
   private readonly apiKey: string;
   private readonly baseUrl: string;
+  private readonly mailBaseUrl: string;
+  private readonly mailbox: string;
   private readonly timeoutMs: number;
   private readonly maxChars: number;
 
@@ -196,6 +205,8 @@ export class RealInkboxClient implements InkboxClient {
     }
     this.apiKey = cfg.apiKey;
     this.baseUrl = cfg.baseUrl;
+    this.mailBaseUrl = cfg.mailBaseUrl;
+    this.mailbox = cfg.mailbox;
     this.timeoutMs = cfg.timeoutMs;
     this.maxChars = cfg.maxChars;
   }
@@ -211,15 +222,31 @@ export class RealInkboxClient implements InkboxClient {
     return { message_id: id, channel: 'text', to, fake: false };
   }
 
-  async sendEmail(_to: string, _subject: string, _body: string): Promise<SendReceipt> {
-    // Honesty rule (AGENTS.md): do not invent SDK methods. The cited Inkbox quickstart documents
-    // `identity.send_text` only. Refuse loudly instead of pretending an email was delivered.
-    throw new HttpError(
-      502,
-      'channel_unavailable',
-      'Inkbox email transport is not documented in the cited quickstart; give the approver a phone number, set AHD_APPROVALS_FAKE=1, or inject an email adapter (see approvals/README.md)',
-      `${STAGE}.send_email`,
-    );
+  /**
+   * Documented call (https://inkbox.ai/docs/api/mail/messages): POST /mailboxes/{address}/messages
+   * with header X-API-Key and body { recipients: { to: [...] }, subject, body_text }. A 201 returns the
+   * created message's metadata. The Idempotency-Key makes a retry send the same email once.
+   */
+  async sendEmail(to: string, subject: string, body: string): Promise<SendReceipt> {
+    this.checkSize(body);
+    const stage = `${STAGE}.send_email`;
+    const key = createHash('sha256').update(`${to}\n${subject}\n${body}`).digest('hex').slice(0, 48);
+    const res = await fetch(`${this.mailBaseUrl}/mailboxes/${encodeURIComponent(this.mailbox)}/messages`, {
+      method: 'POST',
+      headers: { 'x-api-key': this.apiKey, 'content-type': 'application/json', 'idempotency-key': key },
+      body: JSON.stringify({ recipients: { to: [to], cc: null, bcc: null }, subject, body_text: body }),
+      signal: AbortSignal.timeout(this.timeoutMs),
+    }).catch((err: unknown) => {
+      throw new HttpError(502, 'upstream_unreachable', `Inkbox email failed: ${err instanceof Error ? err.message : String(err)}`, stage);
+    });
+    if (!res.ok) {
+      const detail = await res.text().then((t) => t.slice(0, 400)).catch(() => '');
+      throw new HttpError(502, 'upstream_error', `Inkbox email returned ${res.status}${detail ? `: ${detail}` : ''}`, stage);
+    }
+    const payload: unknown = await res.json().catch(() => null);
+    const id = firstString(payload, ['id', 'message_id']);
+    if (!id) throw new HttpError(502, 'bad_upstream_body', 'Inkbox email returned no message id', stage);
+    return { message_id: id, channel: 'email', to, fake: false };
   }
 
   async receiveReply(messageId: string): Promise<InkboxReply | null> {

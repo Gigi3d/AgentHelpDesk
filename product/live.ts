@@ -129,12 +129,17 @@ export function runtimeReport(env: NodeJS.ProcessEnv = process.env): { all_real:
     {
       name: 'approval_channel',
       real: Boolean(env['INKBOX_API_KEY']) && env['AHD_APPROVALS_FAKE'] !== '1',
-      detail: env['INKBOX_API_KEY'] ? 'Inkbox send_text (its email call is undocumented)' : 'no INKBOX_API_KEY: approval emails are not sent; use POST /v1/approvals reply',
+      detail: env['INKBOX_API_KEY'] ? 'Inkbox email (Mail API); this identity has no phone number, so no texts' : 'no INKBOX_API_KEY: approval emails are not sent; use POST /v1/approvals reply',
     },
     {
-      name: 'install_evals',
-      real: Boolean(env['ARMATURE_KEY']) && env['AHD_EVALS_FAKE'] !== '1',
-      detail: env['ARMATURE_KEY'] ? 'Armature install eval' : 'no ARMATURE_KEY: evals use the fake',
+      name: 'armature_feed',
+      real: Boolean(env['ARMATURE_KEY']) && env['AHD_ARMATURE_FAKE'] !== '1',
+      detail: env['ARMATURE_KEY'] ? 'Armature MCP: open issues become cases' : 'no ARMATURE_KEY: the feed returns labelled sample issues',
+    },
+    {
+      name: 'inkbox_a2a',
+      real: Boolean(env['INKBOX_API_KEY']) && env['AHD_INKBOX_FAKE'] !== '1' && env['AHD_APPROVALS_FAKE'] !== '1',
+      detail: env['INKBOX_API_KEY'] ? `agent-to-agent tasks and email at ${env['AHD_INKBOX_MAILBOX'] ?? 'agenthelpdesk@inkboxmail.com'}` : 'no INKBOX_API_KEY: no agent-to-agent or email intake',
     },
   ];
   return { all_real: components.every((c) => c.real), components };

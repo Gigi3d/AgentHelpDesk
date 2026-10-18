@@ -326,9 +326,14 @@ export function armatureClient(env: ArmatureEnv = process.env): ArmatureClient {
   const key = typeof env.ARMATURE_KEY === 'string' ? env.ARMATURE_KEY.trim() : '';
   if (env.AHD_EVALS_FAKE === '1') return new FakeArmature({ reason: 'AHD_EVALS_FAKE=1' });
   if (key.length === 0) return new FakeArmature({ reason: 'ARMATURE_KEY not set' });
+  // Armature publishes no install-eval HTTP API (its docs describe an MCP server and SDK). A real base URL
+  // has to be named on purpose; the Armature feed (feeds/armature.ts) is the integration that reads real data.
+  if (!env.ARMATURE_BASE_URL || env.ARMATURE_BASE_URL.trim().length === 0) {
+    return new FakeArmature({ reason: 'ARMATURE_BASE_URL not set: Armature documents no install-eval HTTP API' });
+  }
   const rawTimeout = Number(env.ARMATURE_TIMEOUT_MS ?? DEFAULT_ARMATURE_TIMEOUT_MS);
   return new HttpArmature({
-    baseUrl: (env.ARMATURE_BASE_URL ?? 'https://api.armature.tech').trim(),
+    baseUrl: env.ARMATURE_BASE_URL.trim(),
     apiKey: key,
     timeoutMs: clampTimeout(rawTimeout),
   });

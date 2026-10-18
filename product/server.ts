@@ -21,6 +21,11 @@ import { onBillable } from './billing/meter.ts';
 import { registerRoutes as registerApprovals } from './approvals/register.ts';
 import { requestApproval } from './approvals/approvals.ts';
 import { registerRoutes as registerEvals } from './evals/register.ts';
+import { registerRoutes as registerInkbox } from './inkbox/register.ts';
+import { startNotifier } from './inkbox/notify.ts';
+import { registerRoutes as registerFeeds } from './feeds/register.ts';
+import { createInkboxClient } from './approvals/inkbox-client.ts';
+import { createA2A } from './inkbox/a2a.ts';
 import { getRunner } from './sandbox/runner.ts';
 import { getProofRunner } from './proofs/proofs.ts';
 import { liveLoopDeps, localRunnerFromEnv, normalizeBlaxelEnv, runtimeReport, seedLiveVendor } from './live.ts';
@@ -117,6 +122,15 @@ registerDesk(router, repo, deskDeps);
 registerBilling(router, repo);
 registerApprovals(router, repo);
 registerEvals(router, repo);
+
+// Start the loop for a case in the background, through the same route the console uses.
+const startCase = async (caseId: string): Promise<void> => {
+  const run = routes.get('POST /v1/cases/run');
+  if (!run) return;
+  await run({ method: 'POST', path: '/v1/cases/run', query: new URLSearchParams(), body: { id: caseId, background: true }, headers: {}, requestId: 'internal', caller: null }).catch(() => undefined);
+};
+registerInkbox(router, repo, { start: startCase });
+registerFeeds(router, repo, { start: startCase });
 
 // Says, from the environment as it really is, which components are real. Never returns secrets.
 router.add('GET', '/v1/runtime', async () => ({ status: 200, body: runtimeReport() }));
@@ -293,6 +307,7 @@ for (const c of runtimeReport().components) {
 process.stdout.write(`agenthelpdesk console: ${WEB_ROOT ?? 'not served (no web/dist; run npm run build in web/)'}\n`);
 const port = Number(process.env.PORT ?? 8787);
 const host = process.env.HOST ?? '127.0.0.1'; // set HOST=0.0.0.0 only with AHD_API_TOKEN set or behind a trusted network
+startNotifier({ repo, mailer: createInkboxClient(), a2a: createA2A() });
 server.listen(port, host, () => {
   process.stdout.write(`agenthelpdesk desk api listening on ${host}:${port}\n`);
 });
