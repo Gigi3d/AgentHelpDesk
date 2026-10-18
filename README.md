@@ -8,6 +8,8 @@ An agent calls a vendor API and fails: the docs are wrong, the error names no fi
 
 ![AgentHelpDesk landing page](docs/landing.png)
 
+**Stays up:** `.github/workflows/keep-live.yml` checks the desk every 10 minutes and redeploys if it is down. The URL does not change. Setup is in that file's header.
+
 ## The loop
 
 1. **Case:** intake commits an ack time and a resolve time.
