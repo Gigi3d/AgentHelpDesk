@@ -69,7 +69,7 @@ const sha = (v) => createHash('sha256').update(canon(v)).digest('hex');
 async function record() {
   say('Recording: one real Ledgerly case on the hosted desk');
   const h = await health();
-  if (!h.persisted) die('the desk is running without AHD_DATA_FILE, so nothing would survive a restart. Redeploy with demo/live.sh deploy.');
+  if (!h.persisted) die(`the desk reports persisted=${h.persisted} (healthz: ${JSON.stringify(h)}). Run: demo/live.sh persist diag`);
   const opened = await api('POST', '/v1/cases', {
     agent_id: 'agent-persist-check', task: 'List my ledger entries',
     request: { method: 'GET', url: 'https://api.ledgerly.test/v1/entries', headers: { 'x-api-key': 'redacted' } },
@@ -124,6 +124,23 @@ async function sdk() {
 
 // ---- modes ----
 const [mode = 'verify', arg] = process.argv.slice(2);
+if (mode === 'diag') {
+  const h = await health();
+  say(`healthz: ${JSON.stringify(h)}`);
+  const { SandboxInstance } = await sdk();
+  const sb = await SandboxInstance.get(deploy().sandbox || 'ahd-desk');
+  const run = async (label, command) => {
+    const r = await sb.process.exec({ command, waitForCompletion: true, timeout: 40 });
+    say(`\n== ${label}\n${`${r.stdout ?? ''}${r.stderr ?? ''}${r.logs ?? ''}`.trim()}`);
+  };
+  await run('env names in /app/ahd.env (values hidden)', "sed 's/=.*//' /app/ahd.env | sort | tr '\\n' ' '");
+  await run('AHD_DATA_FILE line', "grep '^AHD_DATA_FILE' /app/ahd.env || echo MISSING");
+  await run('/app/data', 'ls -la /app/data; df -h /app/data | tail -1');
+  await run('server.ts has the new healthz', "grep -c started_at /app/product/server.ts");
+  await run('node processes', "ps -eo pid,lstart,args | grep '[s]erver.ts'");
+  await run('desk env as the running process sees it', "for p in $(pgrep -f 'product/server.ts'); do echo pid $p; tr '\\0' '\\n' < /proc/$p/environ | grep -c '^AHD_DATA_FILE='; done");
+  process.exit(0);
+}
 if (mode === 'record') { await record(); process.exit(0); }
 if (mode === 'verify') process.exit((await verify('read back')) ? 0 : 1);
 
