@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+  body { @apply bg-white text-body text-ink font-sans; font-feature-settings: 'cv11', 'ss01'; }
+  :focus-visible { outline: 2px solid #2554F5; outline-offset: 2px; border-radius: 6px; }
+  ::selection { background: #EAF0FF; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
