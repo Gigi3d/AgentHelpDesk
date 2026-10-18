@@ -121,6 +121,8 @@ export interface GateDecision {
 
 export function gateWouldNeedApproval(policy: Mode, kind: ChangeKind): boolean {
   if (policy === 'suggest_only') return false;
+  // autonomous: no human in the loop. The three proofs are the gate; green ships.
+  if (policy === 'autonomous') return false;
   if (policy === 'approve_first') return true;
   return !isLowRisk(kind);
 }

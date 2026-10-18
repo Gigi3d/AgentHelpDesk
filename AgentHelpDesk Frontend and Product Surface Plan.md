@@ -212,7 +212,6 @@ The chips and cards read from one table, `tool_events`, which every stage writes
 | Stripe | Meters each verified fix and bills the provider; can let an agent pay for a verified answer | Meter event per fix, running invoice preview, test mode banner | Verified fixes billed and amount due this period | "Pay for proven fixes, not for tickets opened" |
 | Manufact | Exposes report\_problem as an MCP server any agent client can call | Calls received by client name, last call time, the tool schema agents see | MCP calls per day and share that became tickets | "One endpoint any agent can use, no custom SDK" |
 | Inkbox | Gives the desk its own identity and sends approval requests by text or email | Message preview, sent and replied times, approver name | Median minutes from request to approval | "Approve a schema change from your phone" |
-| Primitive | Carries agent-to-agent email threads when an agent or its operator needs a follow-up | Thread view with verified sender, linked to the ticket | Threads answered without a human | "Agents get a reply in the channel they already use" |
 | Armature | Tests whether agents pick and install the desk unprompted | Result of a fresh-agent install eval on the install page | Pass or fail, steps taken, time to first ticket | "A fresh agent installs it from the docs alone" |
 
 Sponsor roles above come from the [Sponsor Briefs](https://claude.ai/artifact/R3HRjAqH2ugfSCawU1Ea5o), which record what each sponsor likely wants. Confirm each API and what the sponsor's judges care about with the sponsor at the event.
@@ -504,7 +503,7 @@ For the hackathon on Oct 17 and 18, build the ticket page first, then the instal
 | Sandboxes | Blaxel, behind a runner interface | Sponsor tool; a second runner stays possible |
 | Messages | Inkbox for approval texts and the desk's identity | Sponsor tool; approve from a phone |
 | Billing | Stripe meter for B2B in test mode; x402 per call for agent-to-agent | Visible meter without real money; the A2A lane shows the 402 and its settlement |
-| Email | Primitive or the backend's mail for the daily report | Choose whichever is working first |
+| Email | Inkbox for the daily report | Use the Inkbox mailbox |
 
 Confirm every sponsor API and its limits at the event. This plan names roles from the Sponsor Briefs and does not assume details the sponsors have not published.
 

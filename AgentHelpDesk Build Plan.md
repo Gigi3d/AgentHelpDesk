@@ -54,7 +54,6 @@ The rule: a sponsor earns a place only if removing it breaks a step of the loop 
 | --- | --- | --- | --- | --- |
 | Blaxel | Reproduce and prove. A persistent per-vendor sandbox holds the vendor's repo and test instance; every proof runs inside it | There is nowhere safe to run an agent's request or a proposed fix, and every run pays a full cold start | E2B, Modal or plain Docker. Blaxel's edge is that a sandbox resumes from standby in under 25 ms with processes restored, so a vendor's environment can sit idle cheaply and wake on a failure | Strong |
 | Manufact | Intake. The report_problem tool is an MCP server built with mcp-use and deployed with `npm run deploy` | Coding agents have no native way to ask the desk for help, and the desk is itself not agent-pickable | A plain HTTP endpoint. MCP is the channel coding agents already use, and Manufact adds an inspector, evals per deploy and distribution to Claude and ChatGPT connectors | Strong, and it targets the "Best MCP Server for agents" prize |
-| Primitive | Fallback intake by email, with sender_verified on each reply | An agent that has not installed the MCP tool has no way in. The address in an error response works for any agent | A plain mailbox or an HTTP form. Primitive's edge is threaded two-way agent conversation with verified senders and a single primitive chat call | Medium |
 | Inkbox | The ship gate: text the vendor's approver, who replies yes or no. It also gives the desk a persistent identity and carries the daily and weekly reports | Riskier changes have no fast human approval | Slack or email approvals. Inkbox's edge is reaching a person by text or phone with a reply the desk can act on | Medium |
 | Armature | Optional channel and benchmark: its analytics can raise the failure, and its evals can check the fix | Nothing in the weekend build breaks | Your own regression tests | Partner conversation, not a dependency |
 | Stripe | Billing. A meter event per billable fix invoices the vendor, and an optional MPP 402 lane lets an agent pay for the verified answer itself | The billable rule has nowhere to land, and the demo shows no money moving | Any billing tool for the meter. MPP's edge is that an agent pays on its own with no account, from $0.50 by card or $0.01 in USDC | Medium for the meter. Strong as a demo for MPP only if your account has preview access |
@@ -65,7 +64,6 @@ The fact checks behind this table:
 
 - **Blaxel:** sandboxes are created with `SandboxInstance.createIfNotExists`, resumed with `SandboxInstance.get`, driven with `sandbox.process.exec` and `sandbox.fs.write`; one command may wait at most 60 seconds, so long test runs must start without waiting (docs). Blaxel is now part of Baseten but says the product continues unchanged. The docs I opened show no repository clone call, so plan to run git clone through process.exec and confirm the sandbox can reach GitHub.
 - **Manufact:** scaffold with `npx create-mcp-use-app@latest`, define tools with `server.tool(...)` and Zod schemas, deploy with `npm run deploy` (mcp-use README).
-- **Primitive:** new agent accounts start reply-only, so a first message to a new recipient can be refused; the desk replies to inbound mail, which fits, but outbound escalation to humans should go through Inkbox (primitive.dev).
 - **Inkbox:** `pip install inkbox` or `npm install @inkbox/sdk`, an `INKBOX_API_KEY`, and `identity.send_text` or `sendText` (quickstart). The quickstart does not say whether texts go over SMS or iMessage.
 
 ## Architecture
@@ -200,7 +198,6 @@ Build the thinnest loop that works end to end first, then widen it. Each checkpo
 
 Cut lines, in the order to drop things:
 
-- Email intake through Primitive. The MCP tool is enough to demo.
 - The install ladder screens. Rung 4 alone carries the weekend demo, so rungs 0 to 3 drop to one screen and a slide if time runs short.
 - The fresh-agent proof as a separate run. If time is short, run it as one more call with a clean context.
 - Failure 2. Failures 1, 3 and 4 still show the easy case, the approval case and the grant case.
@@ -233,7 +230,7 @@ Rules to put in CLAUDE.md:
 
 - Write the proof for a step before the step, and run it after every change.
 - Call the language model as a function with typed input and output. No open-ended loops outside the sandbox.
-- Every external call (Blaxel, Inkbox, Primitive, Stripe) sits behind one small module so it can be swapped or faked.
+- Every external call (Blaxel, Inkbox, Stripe) sits behind one small module so it can be swapped or faked.
 - Each module has a fake that reads from fixtures/, so the whole loop runs offline when a sponsor API is down.
 - No secrets in the repo. Read keys from environment variables and list them in .env.example.
 - Keep the demo runnable at all times. New work goes behind a flag until its checkpoint passes.
@@ -272,7 +269,7 @@ Things the agent will get wrong, so check them:
 
 **Why is the demo vendor a plain repo instead of a backend platform?** Because the ship step we sell is a pull request, so the demo runs on the same path a customer will: a branch, three proofs, a PR. A platform-specific branch would prove the platform, not the desk. InsForge held this slot and was dropped on Oct 17 for exactly that reason; if we want agent-provisioned infrastructure later, Stripe Projects is the sponsor-native way.
 
-**Why Inkbox and Primitive?** Inkbox carries the human approval for risky changes, a text to the person who can say yes. Primitive gives agents an email address to report problems from. Both are replaceable, and we say that, because the product is the loop and not the channels. Inkbox also carries the daily and weekly reports.
+**Why Inkbox?** Inkbox carries the human approval for risky changes, a message to the person who can say yes, and gives agents an email address and agent-to-agent channel to report problems from. It is replaceable, and we say that, because the product is the loop and not the channel. Inkbox also carries the daily and weekly reports.
 
 **Why Stripe, and why both a meter and MPP?** The meter bills the vendor for each verified fix, which is the revenue model. MPP lets an agent pay for a verified answer on its own, which is the "agents want it" moment. The vendor chooses who pays. Alternative for the meter: any billing tool, but it would not show an agent paying.
 
@@ -301,6 +298,5 @@ These four points were not confirmed from the docs I read. Test each one before 
 
 - **Blaxel clone and egress:** the docs show no git clone example. Run git clone through process.exec and confirm the sandbox can reach the repo host. Exec calls cap at 60 seconds, so the vendor's test command either finishes inside that or runs backgrounded with its result polled. Because the design is one sandbox per open case, also confirm how many sandboxes one account may hold at once, what standby snapshot storage costs at that count, and which quota tier removes the TTL that would delete a parked case.
 - **Inkbox text channel:** it is unclear whether texts go over SMS or iMessage. Send one to your own phone.
-- **Primitive limits:** new accounts reply only, with a 1,000 messages an hour limit. Treat email intake as optional.
 
-Sources: the sponsor docs for Blaxel, Manufact (mcp-use), Primitive and Inkbox, read for the sponsor test above, plus Stripe's MPP quickstart and meter docs for billing, plus the Research Dossier for the market, competition and pricing assumptions, plus `evidence/2026-10-16-hark-launch-night/README.md` for the authority envelope, the committed times, push, handoff and the audit receipt. The pricing and unit economics are assumptions to test, not facts.
+Sources: the sponsor docs for Blaxel, Manufact (mcp-use) and Inkbox, read for the sponsor test above, plus Stripe's MPP quickstart and meter docs for billing, plus the Research Dossier for the market, competition and pricing assumptions, plus `evidence/2026-10-16-hark-launch-night/README.md` for the authority envelope, the committed times, push, handoff and the audit receipt. The pricing and unit economics are assumptions to test, not facts.

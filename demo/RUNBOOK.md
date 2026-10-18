@@ -42,7 +42,8 @@ export AHD_FRESH_BASELINE=1
 export AHD_REPRO_COMMAND='node /ahd/replay.mjs'
 export AHD_REPRO_EXPECT=nonzero
 export AHD_APPROVALS_FALLBACK_EMAIL=you@example.com
-export AHD_VENDOR_JSON='{"id":"ledgerly","name":"Ledgerly","risk_policy":"approve_first","report_contacts":["you@example.com"],"test_command":"cd /ahd/work && node --test test/*.test.mjs","stripe_customer_id":"cus_TEST","payer_mode":"vendor"}'
+# risk_policy "autonomous" ships on three green proofs with no human; use "approve_first" to hold changes for one email reply.
+export AHD_VENDOR_JSON='{"id":"ledgerly","name":"Ledgerly","risk_policy":"autonomous","report_contacts":["you@example.com"],"test_command":"cd /ahd/work && node --test test/*.test.mjs","stripe_customer_id":"cus_TEST","payer_mode":"vendor"}'
 # optional, for real billing / approvals:
 # export STRIPE_SECRET_KEY=sk_test_...
 # export INKBOX_API_KEY=...

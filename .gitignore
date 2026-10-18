@@ -55,4 +55,6 @@ deck-source/
 
 # local deploy state and tidy-up folder
 demo/.deploy.json
+demo/.persist.json
+demo/.persist-backup.json
 _to_delete/

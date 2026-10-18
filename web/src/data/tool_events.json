@@ -38,9 +38,7 @@
   { "id": "ev_106", "ticket_id": "ahd_01JBG7PA1M", "stage": "shipped", "tool": "GitHub", "action": "pr.merged", "t_ms": 189000, "d_ms": 900, "result": "auto-merged on green", "payload": { "pr": 45, "regression_test": "rt_0001" } },
   { "id": "ev_107", "ticket_id": "ahd_01JBG7PA1M", "stage": "shipped", "tool": "Stripe", "action": "meter_event.created", "t_ms": 190000, "d_ms": 200, "result": "billed", "payload": { "event_name": "ahd_verified_fix", "identifier": "out_ahd_01JBG7PA1M", "value": 1, "mode": "test" } },
 
-  { "id": "ev_051", "ticket_id": "ahd_01JBFX02KT", "stage": "opened", "tool": "Primitive", "action": "email.received", "t_ms": 0, "d_ms": 500, "result": "sender_verified", "payload": { "from": "bookkeeper@agents.example", "sender_verified": true } },
   { "id": "ev_052", "ticket_id": "ahd_01JBFX02KT", "stage": "proving", "tool": "Blaxel", "action": "proofs.all", "t_ms": 30000, "d_ms": 39000, "result": "3 of 3 passed", "cost_usd": 0.02, "payload": {} },
-  { "id": "ev_053", "ticket_id": "ahd_01JBFX02KT", "stage": "answered", "tool": "Primitive", "action": "email.replied", "t_ms": 270000, "d_ms": 400, "result": "sent", "payload": { "thread": "thr_88a" } },
 
   { "id": "ev_061", "ticket_id": "ahd_01JBFQ8ZRD", "stage": "opened", "tool": "Manufact", "action": "report_problem.received", "t_ms": 0, "d_ms": 300, "result": "ok", "payload": { "client": "python-httpx/0.27" } },
   { "id": "ev_062", "ticket_id": "ahd_01JBFQ8ZRD", "stage": "reproducing", "tool": "AgentHelpDesk", "action": "envelope.check", "t_ms": 600, "d_ms": 40, "result": "denied: over cap", "payload": { "requested_usd": 480, "cap_usd_per_case": 30, "caller_can_widen": false, "receipt": "rcpt_deny_01JBFQ" } },

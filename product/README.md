@@ -17,7 +17,7 @@ node --experimental-strip-types server.ts          # or: npm start
 ```
 
 Listens on `127.0.0.1:${PORT:-8787}`. `GET /healthz` is unauthenticated; every other route is
-registered by a module (`desk/`, `billing/`, `approvals/`, `evals/`, `email/`).
+registered by a module (`desk/`, `billing/`, `approvals/`, `evals/`).
 
 ```bash
 node ../web/node_modules/typescript/bin/tsc -p tsconfig.json --noEmit   # or: npm run typecheck
@@ -145,7 +145,7 @@ before they are stored anyway.
 | `proofs/` | The three proofs: replay → vendor_tests → fresh_agent. |
 | `approvals/` | The one-reply human approval channel (Inkbox text/email). |
 | `billing/` | The billable decision, the three pay lanes, and the Stripe meter. |
-| `evals/`, `email/` | Evaluation runs and the inbound email channel. |
+| `evals/` | Evaluation runs and the Armature feed. |
 | `CONTRACT_REQUESTS.md` | Append-only log of contract asks between modules. |
 
 Each module directory has its own `README.md` with its files, env vars, the sponsor doc pages it

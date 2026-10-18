@@ -107,7 +107,6 @@ async function probe(url, headers) {
 // ---- Tools with no documented read-only probe: presence only ----
 for (const [tool, key, extra] of [
   ['Inkbox', 'INKBOX_API_KEY', 'also set AHD_APPROVALS_FALLBACK_EMAIL or a vendor contact'],
-  ['Primitive', 'PRIMITIVE_KEY', ''],
   ['Armature', 'ARMATURE_KEY', ''],
 ]) {
   const k = get(key);

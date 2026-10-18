@@ -762,7 +762,34 @@ test('recipient handles pick the channel, defaulting to text', () => {
   assert.throws(() => channelForRecipient('slack-handle'), HttpError);
 });
 
-test('the real client refuses the undocumented email channel instead of pretending', async () => {
-  const client = new RealInkboxClient({ apiKey: 'k', baseUrl: 'https://inkbox.invalid/v1', timeoutMs: 500, maxChars: 1400 });
-  await expectHttpError(client.sendEmail('ops@ledgerly.test', 's', 'b'), 502, 'approvals.inkbox.send_email');
+test('the real client sends email through the documented Mail API', async () => {
+  const seen: { url: string; init: RequestInit }[] = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string, init: RequestInit) => {
+    seen.push({ url, init });
+    return new Response(JSON.stringify({ id: 'msg_1' }), { status: 201, headers: { 'content-type': 'application/json' } });
+  }) as typeof fetch;
+  try {
+    const client = new RealInkboxClient({
+      apiKey: 'k',
+      baseUrl: 'https://inkbox.invalid/v1',
+      mailBaseUrl: 'https://inkbox.invalid/api/v1/mail',
+      mailbox: 'desk@inkboxmail.com',
+      timeoutMs: 500,
+      maxChars: 1400,
+    });
+    const receipt = await client.sendEmail('ops@ledgerly.test', 'subject', 'body');
+    assert.equal(receipt.message_id, 'msg_1');
+    assert.equal(receipt.channel, 'email');
+    assert.equal(seen[0]!.url, 'https://inkbox.invalid/api/v1/mail/mailboxes/desk%40inkboxmail.com/messages');
+    const headers = seen[0]!.init.headers as Record<string, string>;
+    assert.equal(headers['x-api-key'], 'k');
+    assert.ok(headers['idempotency-key'].length > 10);
+    const sent = JSON.parse(String(seen[0]!.init.body));
+    assert.deepEqual(sent.recipients.to, ['ops@ledgerly.test']);
+    assert.equal(sent.subject, 'subject');
+    assert.equal(sent.body_text, 'body');
+  } finally {
+    globalThis.fetch = realFetch;
+  }
 });

@@ -520,7 +520,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     replay: { phase, ticketId: HERO_ID },
     startReplay, approve, reject, retryProof, handoff, close, editReply, propose,
     toasts, toast, testMode: true,
-    live: { on: LIVE, url: API, state: liveState, vendor: vendorId },
+    live: { on: LIVE, url: API || window.location.origin, state: liveState, vendor: vendorId },
   };
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

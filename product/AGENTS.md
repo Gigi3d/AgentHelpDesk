@@ -30,7 +30,7 @@ AgentHelpDesk is a support desk whose customers are AI agents. When an agent fai
 - Concurrency: assume many cases at once. Key everything by case id (`ahd-<ticketId>` sandboxes), never by globals.
 
 ## Sponsor SDK honesty
-- Do not invent SDK methods. For any Blaxel/Stripe/Inkbox/Primitive/Manufact call, cite the doc page in a comment and prefer the documented call. Where a real network call is not possible offline, put it behind your module interface with a `Fake*` implementation reading local fixtures, selected by env (`AHD_<MODULE>_FAKE=1`).
+- Do not invent SDK methods. For any Blaxel/Stripe/Inkbox/Manufact call, cite the doc page in a comment and prefer the documented call. Where a real network call is not possible offline, put it behind your module interface with a `Fake*` implementation reading local fixtures, selected by env (`AHD_<MODULE>_FAKE=1`).
 
 ## Tests
 - Write `*.test.ts` next to your code using `node:test` + `node:assert/strict`. Cover the golden path, the idempotency/replay path, and at least one failure path per module.

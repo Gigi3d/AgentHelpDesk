@@ -32,6 +32,37 @@ export class MemoryRepository implements Repository {
   private events: ToolEvent[] = [];
   private eventIds = new Set<string>();
 
+  /** Plain-JSON copy of every table, for the file-backed store (store/persist.ts). */
+  snapshot(): Record<string, unknown> {
+    return {
+      v: 1,
+      vendors: [...this.vendors.values()],
+      failures: [...this.failures.values()],
+      attempts: this.attempts,
+      outcomes: [...this.outcomes.values()],
+      grants: this.grants,
+      meters: this.meters,
+      approvals: [...this.approvals.values()],
+      events: this.events,
+    };
+  }
+
+  /** Load a snapshot() into an empty repository and rebuild the derived indexes. */
+  restore(s: Record<string, unknown>): void {
+    const arr = <T,>(k: string): T[] => (Array.isArray(s[k]) ? (s[k] as T[]) : []);
+    this.vendors = new Map(arr<Vendor>('vendors').map((v) => [v.id, v]));
+    this.failures = new Map(arr<Failure>('failures').map((f) => [f.id, f]));
+    this.attempts = arr<Attempt>('attempts');
+    this.outcomes = new Map(arr<Outcome>('outcomes').map((o) => [o.failure_id, o]));
+    this.grants = arr<Grant>('grants');
+    this.grantKeys = new Map(this.grants.map((g) => [g.idempotency_key, g]));
+    this.meters = arr<MeterEvent>('meters');
+    this.meterIds = new Map(this.meters.map((m) => [m.identifier, m]));
+    this.approvals = new Map(arr<ApprovalRequest>('approvals').map((a) => [a.id, a]));
+    this.events = arr<ToolEvent>('events');
+    this.eventIds = new Set(this.events.map((e) => e.id));
+  }
+
   async putVendor(v: Vendor): Promise<void> {
     this.vendors.set(v.id, { ...v });
   }

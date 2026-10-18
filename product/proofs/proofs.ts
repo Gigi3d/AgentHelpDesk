@@ -157,7 +157,7 @@ class Proofs implements ProofRunner {
     const cmd = `${this.opts.freshAgentHarness} /ahd/fresh/task.md /ahd/fresh/changed.json`;
     const res = await runCapped(sb, cmd, { timeout_ms: this.opts.freshAgentBudgetMs, poll_interval_ms: this.opts.pollIntervalMs });
     if (res.exit_code === 0) {
-      return { proof: 'fresh_agent', pass: true, detail: `fresh clean-context agent succeeded on the forked sandbox (${bundle.length} changed doc(s))${scrubNote}: ${tailText(res.stdout)}` };
+      return { proof: 'fresh_agent', pass: true, detail: `fresh clean-context agent succeeded in a clean sandbox copy (${bundle.length} changed doc(s))${scrubNote}: ${tailText(res.stdout)}` };
     }
     return {
       proof: 'fresh_agent',

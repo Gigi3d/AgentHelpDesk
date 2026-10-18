@@ -95,7 +95,7 @@ export function ClassChip({ c }: { c: FailureClass }) {
   );
 }
 
-export const modeLabel: Record<Mode, string> = { auto: 'Auto', approve_first: 'Approve first', suggest_only: 'Suggest only' };
+export const modeLabel: Record<Mode, string> = { auto: 'Auto', approve_first: 'Approve first', suggest_only: 'Suggest only', autonomous: 'Autonomous' };
 
 export const changeLabel: Record<Ticket['change_type'], string> = {
   docs: 'docs',

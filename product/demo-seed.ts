@@ -184,8 +184,8 @@ export function demoVendorName(): string {
 
 export function demoRiskPolicy(): Mode {
   const raw = envText('AHD_DEMO_RISK_POLICY', 'approve_first', 20, STAGE_VENDOR).toLowerCase();
-  if (raw === 'auto' || raw === 'approve_first' || raw === 'suggest_only') return raw;
-  throw badConfig(`AHD_DEMO_RISK_POLICY must be auto, approve_first or suggest_only, got "${raw}"`, STAGE_VENDOR);
+  if (raw === 'auto' || raw === 'approve_first' || raw === 'suggest_only' || raw === 'autonomous') return raw;
+  throw badConfig(`AHD_DEMO_RISK_POLICY must be auto, approve_first, suggest_only or autonomous, got "${raw}"`, STAGE_VENDOR);
 }
 
 /** A clearly-fake Stripe customer id, so `chooseLane()` picks the B2B meter lane.

@@ -5,6 +5,12 @@
 #   demo/live.sh mcp      start the MCP edge with a public tunnel URL for Claude's custom connector
 #   demo/live.sh run      drive one Ledgerly case through the running desk
 #   demo/live.sh deploy   host the desk in a Blaxel sandbox with a public preview URL (needs token gate)
+#   demo/live.sh stripe   test mode only: create the ahd_verified_fix meter and a test customer
+#   demo/live.sh inkbox   point the Inkbox identity's webhooks at the hosted desk (email and agent-to-agent intake)
+#   demo/live.sh armature pull open issues from Armature into cases on the hosted desk
+#   demo/live.sh cli run -- <cmd>   run a command; if it fails like an agent error, file a case
+#   demo/live.sh approve <case-id>   approve a case parked at the gate on the hosted desk
+#   demo/live.sh persist <mode>   prove state and data survive restart, standby and sandbox deletion (restart|standby|wipe)
 #   demo/live.sh remote   run the case against the hosted desk (reads demo/.deploy.json)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -24,7 +30,7 @@ export AHD_REPRO_COMMAND='node /ahd/replay.mjs'
 export AHD_REPRO_EXPECT=nonzero
 CONTACT="${AHD_APPROVALS_FALLBACK_EMAIL:-you@example.com}"
 export AHD_APPROVALS_FALLBACK_EMAIL="$CONTACT"
-export AHD_VENDOR_JSON="{\"id\":\"ledgerly\",\"name\":\"Ledgerly\",\"risk_policy\":\"approve_first\",\"report_contacts\":[\"$CONTACT\"],\"test_command\":\"cd /ahd/work && node --test test/*.test.mjs\",\"stripe_customer_id\":\"${STRIPE_TEST_CUSTOMER_ID:-}\",\"payer_mode\":\"vendor\"}"
+export AHD_VENDOR_JSON="{\"id\":\"ledgerly\",\"name\":\"Ledgerly\",\"risk_policy\":\"${AHD_RISK_POLICY:-autonomous}\",\"report_contacts\":[\"$CONTACT\"],\"test_command\":\"cd /ahd/work && node --test test/*.test.mjs\",\"stripe_customer_id\":\"${STRIPE_TEST_CUSTOMER_ID:-}\",\"payer_mode\":\"vendor\"}"
 export AHD_DESK_URL="http://127.0.0.1:${PORT:-8787}"
 
 case "${1:-check}" in
@@ -34,15 +40,29 @@ case "${1:-check}" in
     [ -d product/node_modules/@blaxel/core ] || (cd product && npm i --no-save @blaxel/core)
     exec node --experimental-strip-types product/server.ts ;;
   mcp)
+    # After `deploy`, the edge talks to the hosted desk with its token. AHD_MCP_LOCAL=1 keeps the local desk.
+    if [ -f demo/.deploy.json ] && [ "${AHD_MCP_LOCAL:-0}" != "1" ]; then
+      export AHD_DESK_URL="$(node -p "require('./demo/.deploy.json').url")"
+      export AHD_DESK_TOKEN="$(node -p "require('./demo/.deploy.json').token")"
+      echo "MCP edge -> hosted desk $AHD_DESK_URL"
+    fi
     cd mcp && { [ -d node_modules ] || npm install --legacy-peer-deps; }
     exec npx mcp-use dev --tunnel ;;
   run)    exec node demo/run-live.mjs "${@:2}" ;;
   deploy)
     [ -d product/node_modules/@blaxel/core ] || (cd product && npm i --no-save @blaxel/core)
     exec node demo/deploy-blaxel.mjs ;;
+  approve) exec node demo/approve.mjs "${2:-}" ;;
+  logs) exec node demo/desk-logs.mjs ;;
+  stripe) exec node demo/stripe-setup.mjs ;;
+  inkbox) exec node demo/inkbox-setup.mjs ;;
+  cli) shift; exec node cli/ahd.mjs "$@" ;;
+  armature) exec node demo/armature-pull.mjs ;;
   remote)
     [ -f demo/.deploy.json ] || { echo "no demo/.deploy.json: run demo/live.sh deploy first"; exit 1; }
     URL=$(node -p "require('./demo/.deploy.json').url"); export AHD_API_TOKEN=$(node -p "require('./demo/.deploy.json').token")
     exec node demo/run-live.mjs --base "$URL" "${@:2}" ;;
-  *) echo "usage: demo/live.sh check|server|mcp|run|deploy|remote"; exit 2 ;;
+  persist)
+    exec node demo/persist-check.mjs "${@:2}" ;;
+  *) echo "usage: demo/live.sh persist [record|verify|restart|standby|wipe]|check|server|mcp|run|deploy|remote|stripe|inkbox|armature|cli|approve|logs"; exit 2 ;;
 esac

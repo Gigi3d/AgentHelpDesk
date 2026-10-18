@@ -112,7 +112,7 @@ product/    the desk. Node, TypeScript, zero runtime dependencies
   proofs/     the three-proof runner
   approvals/  the one-reply approval channel, and the reports
   billing/    Stripe metering, x402, mpp, pricing, invoice preview
-  email/      the Primitive email client and thread handling
+  email/      email thread handling (fixture lane only)
   evals/      the Armature install eval
   server.ts   wires the modules together. they never import each other
   demo-seed.ts  opt-in demo data, and the four offline fakes
@@ -170,7 +170,7 @@ This is the part worth reading before you trust anything above.
 Two more are fake regardless of the seed:
 
 - x402 payment verification is a deterministic offline stub. No facilitator is ever called.
-- Email falls back to a fake client whenever `PRIMITIVE_KEY` is unset.
+- The email lane runs on fixtures only; there is no email sponsor key.
 
 What is genuinely real and exercised end to end: intake and classification, the case state machine, the approval gate, secret redaction, idempotency, the billing decision rule, user data erasure, the reports, and the console against the live API. The reports contain no language model. Every number is counted out of the store, every sentence is those numbers written out, and each report carries its own list of assumptions.
 
@@ -211,3 +211,25 @@ The order I would fix them in for real traffic: Postgres behind the existing Rep
 | `product/CONTRACT_REQUESTS.md` | the contract disputes between modules, and how each was ruled on |
 
 The demo vendor is Ledgerly. It is a stand-in, it is not a real company, and every address in the fixtures is on a reserved domain.
+
+## One URL, three ways in
+
+`demo/live.sh deploy` puts the desk and the web console on one Blaxel URL. Open `<url>/theater`, paste the desk key once, and watch a case move through its sandbox steps (create, replay, vendor tests, Claude draft, fresh agent, approval, ship, retry, bill) driven by the case's real events.
+
+Cases come in three ways:
+
+- An agent over MCP, A2A or email (Inkbox). `demo/live.sh inkbox` subscribes the webhook at `/v1/inkbox/webhook`.
+- The `ahd` command: `ahd run -- <cmd>` or `ahd bl <args>` runs a command, spots agent-facing errors and files a case, keeping the exit code.
+- The Armature feed: `demo/live.sh armature` pulls issues from their MCP server (needs `ARMATURE_KEY`); field mapping is unconfirmed until a real response is seen.
+
+## No human in the loop
+
+The live Ledgerly vendor now runs in `autonomous` mode: when replay, vendor tests and the fresh-agent proof are all green, the fix ships and the agent retries with no approval step. A failed proof still holds the change and nothing is billed. To bring the human gate back, set `AHD_RISK_POLICY=approve_first` before `demo/live.sh deploy`.
+
+## State and storage on Blaxel
+
+The desk keeps all its state (cases, events, proofs, approvals, outcomes, billing) in `/app/data/cases.json`, and `demo/live.sh deploy` mounts a Blaxel persistent volume (`ahd-data`) there. The data therefore survives a desk restart, sandbox standby, and deletion of the sandbox itself. Prove it against the hosted desk:
+
+- `demo/live.sh persist restart` runs a case, restarts the desk process, and checks the case, events and billing are identical.
+- `demo/live.sh persist standby 90` idles so the sandbox can suspend, then checks again.
+- `demo/live.sh persist wipe` deletes the sandbox, redeploys, and checks the volume gave the case back.

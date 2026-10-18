@@ -10,7 +10,7 @@ import type { Repository } from './store/repository.ts';
 import { makeClaudeResolver } from './desk/resolver-claude.ts';
 import { makeProvisioner } from './sandbox/provision.ts';
 
-const MODES: readonly Mode[] = ['auto', 'approve_first', 'suggest_only'];
+const MODES: readonly Mode[] = ['auto', 'approve_first', 'suggest_only', 'autonomous'];
 
 /** Blaxel's SDK documents BL_API_KEY / BL_WORKSPACE; this repo's client checks BLAXEL_API_KEY.
  * Accept either name and make both visible so neither layer rejects a valid key. */
@@ -119,7 +119,7 @@ export function runtimeReport(env: NodeJS.ProcessEnv = process.env): { all_real:
     {
       name: 'fresh_agent',
       real: sandboxReal && hasAnthropic && !proofsFake && Boolean(env['AHD_PROVISION_DIR']),
-      detail: 'a clean-context Claude call made from a forked sandbox',
+      detail: 'a clean-context Claude call made in a clean sandbox copy',
     },
     {
       name: 'billing',
@@ -129,17 +129,17 @@ export function runtimeReport(env: NodeJS.ProcessEnv = process.env): { all_real:
     {
       name: 'approval_channel',
       real: Boolean(env['INKBOX_API_KEY']) && env['AHD_APPROVALS_FAKE'] !== '1',
-      detail: env['INKBOX_API_KEY'] ? 'Inkbox send_text (its email call is undocumented)' : 'no INKBOX_API_KEY: approval emails are not sent; use POST /v1/approvals reply',
+      detail: env['INKBOX_API_KEY'] ? 'Inkbox email (Mail API); this identity has no phone number, so no texts' : 'no INKBOX_API_KEY: approval emails are not sent; use POST /v1/approvals reply',
     },
     {
-      name: 'email_intake',
-      real: Boolean(env['PRIMITIVE_KEY']) && env['AHD_EMAIL_FAKE'] !== '1',
-      detail: env['PRIMITIVE_KEY'] ? 'Primitive email lane' : 'no PRIMITIVE_KEY: the email lane uses fixtures',
+      name: 'armature_feed',
+      real: Boolean(env['ARMATURE_KEY']) && env['AHD_ARMATURE_FAKE'] !== '1',
+      detail: env['ARMATURE_KEY'] ? 'Armature MCP: open issues become cases' : 'no ARMATURE_KEY: the feed returns labelled sample issues',
     },
     {
-      name: 'install_evals',
-      real: Boolean(env['ARMATURE_KEY']) && env['AHD_EVALS_FAKE'] !== '1',
-      detail: env['ARMATURE_KEY'] ? 'Armature install eval' : 'no ARMATURE_KEY: evals use the fake',
+      name: 'inkbox_a2a',
+      real: Boolean(env['INKBOX_API_KEY']) && env['AHD_INKBOX_FAKE'] !== '1' && env['AHD_APPROVALS_FAKE'] !== '1',
+      detail: env['INKBOX_API_KEY'] ? `agent-to-agent tasks and email at ${env['AHD_INKBOX_MAILBOX'] ?? 'agenthelpdesk@inkboxmail.com'}` : 'no INKBOX_API_KEY: no agent-to-agent or email intake',
     },
   ];
   return { all_real: components.every((c) => c.real), components };
