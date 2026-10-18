@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { deleteBlaxelSandbox, getBlaxelActivity, getBlaxelSandboxes, getMemory, listCases, resumeMemory, type BlaxelActivity, type BlaxelSandbox, type BlaxelSandboxes, type MemoryResume } from '../lib/api';
+import { deleteBlaxelSandbox, getBlaxelActivity, getBlaxelSandboxes, getMemory, getScenarios, listCases, resumeMemory, type BlaxelActivity, type BlaxelSandbox, type BlaxelSandboxes, type MemoryResume, type ScenarioRun } from '../lib/api';
 import { cx } from '../components/ui';
 import { TILE, WORD, kindFor, type SandboxKind } from '../lib/sandboxKinds';
 
@@ -14,6 +14,23 @@ const ago = (iso: string | null) => {
   return s < 90 ? `${s}s ago` : s < 5400 ? `${Math.round(s / 60)} min ago` : s < 129600 ? `${Math.round(s / 3600)} h ago` : `${Math.round(s / 86400)} d ago`;
 };
 
+
+const WORKING = new Set(['opened', 'reproducing', 'fix_drafted', 'proving']);
+const runKind = (r: ScenarioRun): Kind => (WORKING.has(r.status) ? 'working' : r.status === 'escalated' ? 'escalated' : r.memory_hit ? 'remembered' : 'closed');
+
+/** Test runs persist: they are rebuilt from the stored cases, so they stay after the sandboxes are gone. */
+function rounds(runs: ScenarioRun[]): ScenarioRun[][] {
+  const sorted = [...runs].sort((a, b) => a.created_at.localeCompare(b.created_at));
+  const out: ScenarioRun[][] = [];
+  for (const r of sorted) {
+    const last = out[out.length - 1];
+    const prev = last?.[last.length - 1];
+    if (last && prev && prev.agent === r.agent && Date.parse(r.created_at) - Date.parse(prev.created_at) < 180_000) last.push(r);
+    else out.push([r]);
+  }
+  return out.reverse();
+}
+
 export default function Blaxel() {
   const [sb, setSb] = useState<BlaxelSandboxes | null>(null);
   const [act, setAct] = useState<BlaxelActivity | null>(null);
@@ -21,6 +38,8 @@ export default function Blaxel() {
   const [remembered, setRemembered] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [arm, setArm] = useState<string | null>(null);
+  const [runs, setRuns] = useState<ScenarioRun[]>([]);
+  const [replay, setReplay] = useState<Record<string, number>>({});
   const [woke, setWoke] = useState<Record<string, MemoryResume | string>>({});
 
   const load = useCallback(async () => {
@@ -28,6 +47,7 @@ export default function Blaxel() {
       const [s, a, c, m] = await Promise.all([getBlaxelSandboxes(), getBlaxelActivity(), listCases(100), getMemory().catch(() => null)]);
       setSb(s);
       setAct(a);
+      getScenarios().then((r) => setRuns(r.scenarios.flatMap((s) => s.runs))).catch(() => undefined);
       setStatus(Object.fromEntries(c.cases.map((x) => [x.id, x.status])));
       setRemembered(new Set((m?.entries ?? []).map((e) => e.source_case)));
       setError(null);
@@ -93,6 +113,44 @@ export default function Blaxel() {
                 <span key={k} className="inline-flex items-center gap-1.5"><i className={cx('inline-block h-2.5 w-2.5 rounded-sm border', TILE[k])} />{WORD[k]}</span>
               ))}
             </p>
+          </section>
+        )}
+
+
+        {runs.length > 0 && (
+          <section className="mt-8">
+            <h2 className="text-[18px] font-semibold">Test runs</h2>
+            <p className="mt-1 text-[13px] text-muted">Every round of x402 tests, kept after the sandboxes are deleted. Replay plays the sandboxes opening again.</p>
+            <ul className="mt-3 space-y-3">
+              {rounds(runs).slice(0, 8).map((round) => {
+                const id = round[0]!.case_id;
+                const live = new Set((sb?.sandboxes ?? []).map((s) => s.name));
+                return (
+                  <li key={id} className="rounded-2xl border border-line bg-white p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-[14px] text-ink">
+                        <span className="font-medium">Agent {round[0]!.agent}</span>
+                        <span className="text-muted"> · {round.length} sandboxes · {ago(round[0]!.created_at)}</span>
+                      </p>
+                      <button onClick={() => setReplay((r) => ({ ...r, [id]: (r[id] ?? 0) + 1 }))} className="rounded-full border border-line px-3 py-1 text-[12px] text-ink hover:border-blue">Replay</button>
+                    </div>
+                    <div key={replay[id] ?? 0} className="mt-3 flex flex-wrap gap-2">
+                      {round.map((r, i) => {
+                        const k = runKind(r);
+                        const gone = sb?.real === true && !live.has(r.sandbox);
+                        return (
+                          <Link key={r.case_id} to={`/app/theater/${r.case_id}`} title={`${r.sandbox}\n${WORD[k]}${gone ? ' (sandbox deleted)' : ''}`}
+                            className={cx('flex h-14 w-36 flex-col justify-between rounded-lg border px-2 py-1.5 animate-wake', TILE[k], k === 'closed' ? 'text-ink' : 'text-white', gone && 'opacity-60')} style={{ animationDelay: `${i * 140}ms` }}>
+                            <span className="truncate font-mono text-[11px]">{r.scenario ?? 'case'}</span>
+                            <span className="text-[11px] opacity-90">{r.memory_hit ? 'memory hit' : WORKING.has(r.status) ? 'running' : r.status}{r.ms ? ` · ${Math.round(r.ms / 1000)}s` : ''}</span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
           </section>
         )}
 
