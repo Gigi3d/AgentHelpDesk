@@ -1,0 +1,24 @@
+{
+  "sample": true,
+  "providers": [
+    { "id": "prov_ledgerly", "name": "Ledgerly", "stage": "live", "mode": "approve_first", "open": 3, "pass_rate": 0.91, "mrr_usd": 90.5, "owner": "Gideon", "next": "Widen Auto to error text on /entries" },
+    { "id": "prov_hark", "name": "Hark (design partner #0)", "stage": "outreach", "mode": "—", "open": 0, "pass_rate": null, "mrr_usd": 0, "owner": "Gideon", "next": "Send the agent's own spec back to the team" },
+    { "id": "prov_demo2", "name": "Staging provider", "stage": "test", "mode": "auto", "open": 1, "pass_rate": 0.88, "mrr_usd": 0, "owner": "Claude", "next": "Replay recorded tickets nightly" }
+  ],
+  "quality": [
+    { "type": "Docs", "proofs": 64, "pass": 0.95, "rolled_back": 0, "rejected": 1, "flaky": 1 },
+    { "type": "Error text", "proofs": 31, "pass": 0.94, "rolled_back": 0, "rejected": 0, "flaky": 0 },
+    { "type": "Config", "proofs": 12, "pass": 0.83, "rolled_back": 1, "rejected": 1, "flaky": 1 },
+    { "type": "Grant", "proofs": 6, "pass": 0.83, "rolled_back": 0, "rejected": 1, "flaky": 0 }
+  ],
+  "unit_cost": { "sandbox_s": 0.0003, "model_per_ticket_usd": 0.035, "messages_per_ticket_usd": 0.008, "note": "Per-proof cost is still being measured; price is $0.50–$1." },
+  "install_funnel": [
+    { "step": "Signed in", "n": 14 },
+    { "step": "Connected repo", "n": 11 },
+    { "step": "Spec found", "n": 9 },
+    { "step": "PR opened", "n": 9 },
+    { "step": "PR merged", "n": 6 },
+    { "step": "First test ticket", "n": 6 },
+    { "step": "Live", "n": 3 }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "mode": "test",
+  "period": { "start": "2026-10-01", "end": "2026-10-31" },
+  "prices": { "docs_error_text": 0.5, "code_config_grant": 1.0, "migration_pr": 25.0, "platform_monthly": 0.0 },
+  "usage_by_day": [
+    { "d": "10-05", "docs": 3, "code": 1, "migration": 0 },
+    { "d": "10-06", "docs": 2, "code": 2, "migration": 0 },
+    { "d": "10-07", "docs": 5, "code": 1, "migration": 0 },
+    { "d": "10-08", "docs": 4, "code": 3, "migration": 0 },
+    { "d": "10-09", "docs": 6, "code": 2, "migration": 1 },
+    { "d": "10-10", "docs": 2, "code": 0, "migration": 0 },
+    { "d": "10-11", "docs": 1, "code": 1, "migration": 0 },
+    { "d": "10-12", "docs": 7, "code": 3, "migration": 0 },
+    { "d": "10-13", "docs": 5, "code": 4, "migration": 0 },
+    { "d": "10-14", "docs": 6, "code": 2, "migration": 0 },
+    { "d": "10-15", "docs": 3, "code": 3, "migration": 0 },
+    { "d": "10-16", "docs": 4, "code": 1, "migration": 0 },
+    { "d": "10-17", "docs": 6, "code": 2, "migration": 0 }
+  ],
+  "spend_cap_usd": 150,
+  "invoices": [
+    { "id": "in_test_0009", "period": "September 2026", "total_usd": 112.5, "status": "paid", "fixes": 87 },
+    { "id": "in_test_0008", "period": "August 2026", "total_usd": 78.0, "status": "paid", "fixes": 51 }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "$schema": "https://agenthelpdesk.dev/schema/agenthelpdesk.v1.json",
+  "version": 1,
+  "provider": {
+    "id": "prov_ledgerly",
+    "name": "Ledgerly",
+    "note": "Built-for-the-demo vendor with seeded failures. Not a real company.",
+    "repo": "github.com/ledgerly-demo/ledgerly-api",
+    "help_url": "https://help.ledgerly.example/agents",
+    "openapi": "openapi/ledgerly.yaml"
+  },
+  "mode_default": "approve_first",
+  "endpoints": [
+    { "route": "GET /v1/entries", "desk": true, "mode": "auto", "calls_7d": 3120, "failure_rate_7d": 1.2 },
+    { "route": "POST /v1/entries", "desk": true, "mode": "auto", "calls_7d": 1840, "failure_rate_7d": 3.4 },
+    { "route": "POST /v1/invoices", "desk": true, "mode": "approve_first", "calls_7d": 960, "failure_rate_7d": 6.1 },
+    { "route": "POST /v1/checkout", "desk": true, "mode": "approve_first", "calls_7d": 1410, "failure_rate_7d": 2.2 },
+    { "route": "POST /v1/entitlements/{id}/apply", "desk": true, "mode": "approve_first", "calls_7d": 585, "failure_rate_7d": 11.8 },
+    { "route": "POST /v1/verifications", "desk": true, "mode": "approve_first", "calls_7d": 402, "failure_rate_7d": 4.7 },
+    { "route": "POST /v1/refunds", "desk": true, "mode": "suggest_only", "sensitive": true, "calls_7d": 210, "failure_rate_7d": 0.9 },
+    { "route": "POST /v1/payouts", "desk": false, "mode": "suggest_only", "sensitive": true, "calls_7d": 771, "failure_rate_7d": 0.2 }
+  ],
+  "approvers": [
+    { "name": "Gideon Nweze", "role": "admin", "channel": "text", "backup": false },
+    { "name": "On-call engineer", "role": "approver", "channel": "email", "backup": true }
+  ],
+  "reminder_after": "15m",
+  "team": [
+    { "name": "Gideon Nweze", "email": "gideon@ledgerly.example", "role": "Admin" },
+    { "name": "Claude", "email": "claude@ledgerly.example", "role": "Engineer" },
+    { "name": "On-call engineer", "email": "oncall@ledgerly.example", "role": "Approver" }
+  ],
+  "notifications": {
+    "fix_waiting_for_approval": { "label": "Fix waiting for approval", "channel": "Text, then email if no reply", "when": "Immediately; reminder after your wait time", "on": true },
+    "proof_failed_twice": { "label": "Proof failed twice", "channel": "Email and console banner", "when": "Immediately; asks for a human", "on": true },
+    "fix_shipped": { "label": "Fix shipped", "channel": "Console feed; daily report", "when": "Not individually, to avoid noise", "on": true },
+    "agent_won": { "label": "Agent won", "channel": "Daily report only", "when": "Once a day", "on": false },
+    "spend_cap_80_percent": { "label": "Spend cap at 80 percent", "channel": "Email to admins", "when": "Once per period", "on": true }
+  },
+  "branding": { "color": "#0E7C66", "logo_text": "L" },
+  "webhook_url": "https://ops.ledgerly.example/ahd",
+  "mute_list": ["python-httpx/0.27"],
+  "partners": ["hark-concierge/2.4 (mcp)"],
+  "agent_payments": { "enabled": false, "price_usd": 0.5, "status_code": 402, "protocol": "x402" },
+  "authority": {
+    "entitlements.reissue": { "enabled": true, "per_user": 1, "cap_usd_per_case": 30, "cap_usd_per_agent_day": 200, "requires": "approval" },
+    "verifications.appeal": { "enabled": false, "per_case": 2, "status": "coming" },
+    "orders.state": { "enabled": false, "read_only": true, "status": "coming" },
+    "refunds.create": { "enabled": false, "cap_usd_per_case": 30, "cap_usd_per_agent_day": 200, "status": "coming" }
+  },
+  "sla": {
+    "blocked_order": { "ack_within": "5m", "resolve_within": "1h" },
+    "default": { "ack_within": "15m", "resolve_within": "4h" }
+  },
+  "report": {
+    "daily_at": "08:00",
+    "timezone": "America/Los_Angeles",
+    "recipients": ["founders@ledgerly.example"]
+  },
+  "agent_identifier_header": "AHD-Agent-Id"
+}

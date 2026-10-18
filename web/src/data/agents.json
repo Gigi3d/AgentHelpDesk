@@ -1,0 +1,8 @@
+[
+  { "id": "agt_concierge", "name": "Pizza concierge agent", "client": "hark-concierge/2.4 (mcp)", "kind": "consumer", "calls_7d": 4120, "failures_7d": 212, "tickets": 3, "status": "won", "partner": true, "identified": true, "last_seen": "2026-10-18T03:19:40Z" },
+  { "id": "agt_claude_code", "name": "Claude Code", "client": "claude-code/2.1 (mcp-use)", "kind": "coding", "calls_7d": 1844, "failures_7d": 61, "tickets": 3, "status": "won", "partner": false, "identified": true, "last_seen": "2026-10-18T03:11:02Z" },
+  { "id": "agt_cursor", "name": "Cursor agent", "client": "cursor-agent/1.9", "kind": "coding", "calls_7d": 932, "failures_7d": 40, "tickets": 2, "status": "helped", "partner": false, "identified": true, "last_seen": "2026-10-18T02:58:13Z" },
+  { "id": "agt_codex", "name": "Codex", "client": "codex-cli/0.48", "kind": "coding", "calls_7d": 611, "failures_7d": 22, "tickets": 1, "status": "won", "partner": false, "identified": true, "last_seen": "2026-10-18T01:40:55Z" },
+  { "id": "agt_bookkeeper", "name": "Bookkeeper bot", "client": "openai-agents-python/0.6", "kind": "workflow", "calls_7d": 288, "failures_7d": 31, "tickets": 2, "status": "lost", "partner": false, "identified": true, "last_seen": "2026-10-17T22:04:31Z" },
+  { "id": "agt_unknown_7f", "name": "Unidentified client", "client": "python-httpx/0.27", "kind": "unknown", "calls_7d": 1503, "failures_7d": 380, "tickets": 1, "status": "helped", "partner": false, "identified": false, "muted": true, "last_seen": "2026-10-18T03:02:47Z" }
+]

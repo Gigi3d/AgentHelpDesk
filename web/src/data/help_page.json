@@ -1,0 +1,31 @@
+{
+  "provider": "Ledgerly",
+  "version": "2026-10-18",
+  "how_to_ask": {
+    "mcp": { "server": "https://ledgerly-desk.manufact.app/mcp", "tool": "report_problem" },
+    "http": "POST https://help.ledgerly.example/agents/cases",
+    "email": "desk@ledgerly.example"
+  },
+  "identify_yourself": { "header": "AHD-Agent-Id", "optional": true, "why": "So we can tell you when a fix you needed has shipped." },
+  "commitments": {
+    "blocked_order": { "ack_within": "5m", "resolve_within": "1h" },
+    "default": { "ack_within": "15m", "resolve_within": "4h" },
+    "on_breach": "case.breached_sla is pushed and a human is paged."
+  },
+  "can_change": ["docs", "error text", "OpenAPI descriptions", "test-key config", "bounded grants listed under authority"],
+  "cannot_change": ["your account limits", "prices", "anything outside an authority envelope"],
+  "authority": [
+    { "verb": "POST /v1/entitlements/{id}/reissue", "status": "live", "per_user": 1, "cap_usd_per_case": 30, "idempotency_key": "required" },
+    { "verb": "POST /v1/verifications/{id}/appeal", "status": "coming", "per_case": 2 },
+    { "verb": "GET /v1/orders/{id}/state", "status": "coming", "read_only": true },
+    { "verb": "POST /v1/refunds", "status": "coming", "cap_usd_per_case": 30, "cap_usd_per_agent_day": 200 }
+  ],
+  "push_topics": ["case.acknowledged", "case.needs_user_input", "case.resolved", "case.breached_sla"],
+  "handoff": "POST /cases/{id}/handoff brings a human into the same thread with the full transcript.",
+  "delete_user_data": "DELETE /v1/users/{id}/data returns a confirmation receipt.",
+  "known_issues_fixed": [
+    { "case": "ahd_01JBG7PA1M", "summary": "Quickstart used x-api-key. Use Authorization: Bearer." },
+    { "case": "ahd_01JBGM9W2E", "summary": "Entry date must be YYYY-MM-DD. The 422 now names the field." }
+  ],
+  "human_fallback": "support@ledgerly.example (a person reads this, even when the desk is down)"
+}

@@ -1,0 +1,18 @@
+{
+  "date": "2026-10-18",
+  "sample": true,
+  "headline": { "opened": 8, "fixed": 4, "waiting": 2, "agents_won": 3 },
+  "agents_won": [
+    { "agent": "Codex", "endpoint": "GET /v1/entries", "case": "ahd_01JBG7PA1M", "story": "401 on first call → quickstart fixed → listed entries" },
+    { "agent": "Claude Code", "endpoint": "POST /v1/entries", "case": "ahd_01JBGM9W2E", "story": "422 \"invalid request\" → error names the field → entry posted" },
+    { "agent": "Pizza concierge agent", "endpoint": "DELETE /v1/users/{id}/data", "case": "ahd_01JBF1N8V3", "story": "No deletion path → endpoint shipped → user data deleted with receipt" }
+  ],
+  "still_waiting": ["ahd_01JBH4RK7Q", "ahd_01JBGZ3SCP"],
+  "docs_mislead": [
+    { "where": "docs/quickstart.md", "cases": 23, "change": "Auth header" },
+    { "where": "docs/pagination.md", "cases": 6, "change": "Cursor, not page" },
+    { "where": "docs/webhooks.md", "cases": 2, "change": "Raw body before JSON" }
+  ],
+  "changed": { "prs_opened": 6, "prs_merged": 3, "regression_tests_added": 2, "grants_issued": 1 },
+  "spend": { "today_usd": 1.5, "period_usd": 40.5 }
+}

@@ -1,0 +1,38 @@
+{
+  "name": "report_problem",
+  "description": "Call this when a Ledgerly API call fails and retrying does not help. Returns a case with committed ack_by and resolve_by times right away, then a verified answer, an executable outcome, or a bounded grant you may call yourself.",
+  "inputSchema": {
+    "type": "object",
+    "required": ["request_id"],
+    "properties": {
+      "request_id": { "type": "string", "description": "The Request-Id header or help.request_id from the failing response." },
+      "goal": { "type": "string", "description": "What you were trying to do, in one sentence. Required to open a case; omit it when you send case_id to check status." },
+      "tried": { "type": "string", "description": "What you already tried." },
+      "contact": { "type": "string", "description": "Optional. How to reach your operator, such as an email." },
+      "case_id": { "type": "string", "description": "Optional. Pass an existing case id to check its status instead of opening a new case." }
+    }
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "case_id": { "type": "string" },
+      "status": { "enum": ["opened", "working", "needs_user_input", "answered", "handed_off"] },
+      "ack_by": { "type": "string", "format": "date-time" },
+      "resolve_by": { "type": "string", "format": "date-time" },
+      "queue_position": { "type": "integer" },
+      "answer": {
+        "type": "object",
+        "properties": {
+          "summary": { "type": "string" },
+          "fix_steps": { "type": "array", "items": { "type": "string" } },
+          "docs": { "type": "string" },
+          "tested": { "type": "object", "properties": { "replay": { "type": "boolean" }, "vendor_tests": { "type": "boolean" }, "fresh_agent": { "type": "boolean" } } }
+        }
+      },
+      "outcome": { "type": "object", "description": "Executable result: action, amount, currency, expires_at." },
+      "authority": { "type": "object", "description": "Verbs you may now call, each with its cap and per-user limit." },
+      "events": { "type": "array", "items": { "enum": ["case.acknowledged", "case.needs_user_input", "case.resolved", "case.breached_sla"] } },
+      "wait": { "type": "integer", "description": "Seconds before polling again. Fallback when you cannot receive push." }
+    }
+  }
+}
