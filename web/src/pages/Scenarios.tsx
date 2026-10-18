@@ -48,7 +48,7 @@ function Card({ s }: { s: Scenario }) {
     <li className="rounded-card border border-line bg-white p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-[15px] font-semibold text-ink">{s.title}</h3>
+          <h3 className="text-[15px] font-semibold text-ink">{s.title}{s.featured && <Chip tone="blue" className="ml-2 align-middle">in the 4-run</Chip>}</h3>
           <p className="mt-0.5 text-[13px] text-muted">{s.defect}</p>
           <p className="mt-1 font-mono text-[12px] text-error-text">402 {s.id}</p>
         </div>
@@ -120,11 +120,11 @@ export default function Scenarios() {
         <div className="max-w-[64ch]">
           <h1 className="text-title font-semibold text-ink">x402 scenarios</h1>
           <p className="mt-2 text-body text-muted">
-            Seven ways a paid call to Ledgerly goes wrong, all simulated and test mode, nothing is charged. Each one runs end to end with nobody approving: the desk reproduces it in a Blaxel sandbox, fixes the docs, proves the fix three ways and ships it. Run them again as a second agent and the desk reuses what it already proved.
+            Seven ways a paid call to Ledgerly goes wrong, all simulated and test mode, nothing is charged. The run button fires the four marked ones, so a round opens four sandboxes. Each runs end to end with nobody approving: the desk reproduces it in a Blaxel sandbox, fixes the docs, proves the fix three ways and ships it. Run them again as a second agent and the desk reuses what it already proved.
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="primary" onClick={() => void run('alpha')} disabled={busy}>{busy ? 'Starting' : 'Run all 7 as agent alpha'}</Button>
+          <Button variant="primary" onClick={() => void run('alpha')} disabled={busy}>{busy ? 'Starting' : 'Run 4 as agent alpha'}</Button>
           <Button onClick={() => void run('beta')} disabled={busy}>Run again as agent beta</Button>
         </div>
       </header>

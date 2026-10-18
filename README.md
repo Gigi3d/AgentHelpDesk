@@ -240,7 +240,7 @@ Ledgerly's paid premium report (`GET /v1/premium/report`) is gated by a simulate
 
 ```
 demo/live.sh deploy
-demo/live.sh scenarios            # round 1 (agent alpha), then round 2 (agent beta): Fix Memory reuses the proven fixes
+demo/live.sh scenarios            # 4 scenarios: round 1 (agent alpha, 4 sandboxes), then round 2 (agent beta) where Fix Memory reuses the fixes; --all runs all 7
 ```
 
-Open `<url>/app/scenarios` to watch the board. Round 2 shows "memory hit, no model call" on every row while all three proofs still run. Each round opens one sandbox per scenario, so on Blaxel Tier 0 (10 sandboxes) use `--only` or run `demo/live.sh cleanup --yes` between rounds.
+Open `<url>/app/scenarios` to watch the board. Round 2 shows "memory hit, no model call" on every row while all three proofs still run. Each round opens four sandboxes (one per scenario), so use `--rounds 1` to keep it to four, and run `demo/live.sh cleanup --yes` between runs on Blaxel Tier 0 (10 sandboxes).

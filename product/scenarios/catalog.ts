@@ -15,17 +15,21 @@ export interface Scenario {
   /** The header or field the agent sent that the API rejected. */
   sent: string;
   message: string;
+  /** Part of the default run: four sandboxes per round. The rest run only when named. */
+  featured?: boolean;
 }
 
 export const SCENARIOS: readonly Scenario[] = [
-  { id: 'payment_header_missing', title: 'Payment sent in the wrong header', defect: 'The quickstart names the header Payment, the API reads X-PAYMENT.', sent: 'Payment: scheme=exact,...', message: 'Send the payment in the X-PAYMENT header.' },
+  { featured: true, id: 'payment_header_missing', title: 'Payment sent in the wrong header', defect: 'The quickstart names the header Payment, the API reads X-PAYMENT.', sent: 'Payment: scheme=exact,...', message: 'Send the payment in the X-PAYMENT header.' },
   { id: 'unsupported_scheme', title: 'Wrong payment scheme', defect: 'The quickstart pays with scheme=upto, the API only takes exact.', sent: 'scheme=upto', message: 'Only the exact scheme is accepted.' },
-  { id: 'wrong_network', title: 'Mainnet payment on a testnet API', defect: 'The quickstart pays on base, the API settles on base-sepolia.', sent: 'network=base', message: 'This API settles on base-sepolia.' },
+  { featured: true, id: 'wrong_network', title: 'Mainnet payment on a testnet API', defect: 'The quickstart pays on base, the API settles on base-sepolia.', sent: 'network=base', message: 'This API settles on base-sepolia.' },
   { id: 'wrong_recipient', title: 'Paid the old address', defect: 'The quickstart pays an old pay_to address, not the one in the 402.', sent: 'pay_to=0xLedgerlyOld', message: 'The payment names a different recipient than the one in accepts.' },
-  { id: 'insufficient_amount', title: 'Short by one decimal place', defect: 'The quickstart pays 1000 base units, the price is 10000.', sent: 'amount=1000', message: 'The price is 10000 base units.' },
+  { featured: true, id: 'insufficient_amount', title: 'Short by one decimal place', defect: 'The quickstart pays 1000 base units, the price is 10000.', sent: 'amount=1000', message: 'The price is 10000 base units.' },
   { id: 'nonce_reused', title: 'Replayed nonce', defect: 'The quickstart hardcodes a nonce that was already settled.', sent: 'nonce=n-demo-0001', message: 'That nonce was already settled. Every payment needs a fresh nonce.' },
-  { id: 'quote_expired', title: 'Stale quote', defect: 'The quickstart hardcodes an old quote id instead of the current one.', sent: 'quote=q-2025-10-01', message: 'That quote is no longer current. Use the quote from the latest 402.' },
+  { featured: true, id: 'quote_expired', title: 'Stale quote', defect: 'The quickstart hardcodes an old quote id instead of the current one.', sent: 'quote=q-2025-10-01', message: 'That quote is no longer current. Use the quote from the latest 402.' },
 ];
+
+export const DEFAULT_IDS: readonly string[] = SCENARIOS.filter((s) => s.featured).map((s) => s.id);
 
 export function scenarioById(id: string): Scenario | undefined {
   return SCENARIOS.find((s) => s.id === id);

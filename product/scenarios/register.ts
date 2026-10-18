@@ -1,7 +1,7 @@
 // scenarios/register.ts: the x402 scenario board.
 //   GET  /v1/scenarios       every scenario with the cases that ran it: status, proofs, whether the fix came
 //                            from memory, and how long it took. Read-only.
-//   POST /v1/scenarios/run   { ids?: string[], agent?: string } files each scenario's failure as an agent would and
+//   POST /v1/scenarios/run   { ids?: string[], agent?: string } (default: the 4 featured scenarios) files each scenario's failure as an agent would and
 //                            starts the loop in the background. No approval step: the vendor runs autonomous.
 import type { Ctx, HttpResult, Router } from '../shared/http.ts';
 import { HttpError } from '../shared/http.ts';
@@ -9,7 +9,7 @@ import { intake } from '../desk/intake.ts';
 import { sandboxName } from '../desk/loop.ts';
 import type { Failure } from '../shared/types.ts';
 import type { Repository } from '../store/repository.ts';
-import { SCENARIOS, reportFor, scenarioById } from './catalog.ts';
+import { DEFAULT_IDS, SCENARIOS, reportFor, scenarioById } from './catalog.ts';
 
 export interface ScenarioDeps {
   start: (caseId: string) => Promise<void>;
@@ -50,7 +50,7 @@ export function registerRoutes(router: Router, repo: Repository, deps: ScenarioD
 
   router.add('POST', '/v1/scenarios/run', async (ctx: Ctx): Promise<HttpResult> => {
     const b = (typeof ctx.body === 'object' && ctx.body !== null ? ctx.body : {}) as Record<string, unknown>;
-    const ids = Array.isArray(b['ids']) && b['ids'].length > 0 ? (b['ids'] as unknown[]).map(String) : SCENARIOS.map((s) => s.id);
+    const ids = Array.isArray(b['ids']) && b['ids'].length > 0 ? (b['ids'] as unknown[]).map(String) : [...DEFAULT_IDS];
     const agent = typeof b['agent'] === 'string' && /^[a-z0-9-]{1,32}$/.test(b['agent']) ? b['agent'] : 'alpha';
     const picked = ids.map((id) => {
       const s = scenarioById(id);

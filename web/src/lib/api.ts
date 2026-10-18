@@ -899,6 +899,6 @@ export type ScenarioRun = {
   proofs: { replay: boolean; vendor_tests: boolean; fresh_agent: boolean } | null;
   billable: boolean;
 };
-export type Scenario = { id: string; title: string; defect: string; sent: string; message: string; runs: ScenarioRun[] };
+export type Scenario = { featured?: boolean; id: string; title: string; defect: string; sent: string; message: string; runs: ScenarioRun[] };
 export const getScenarios = () => request<{ scenarios: Scenario[] }>('GET', '/v1/scenarios');
 export const runScenarios = (agent: string, ids?: string[]) => request<{ started: { scenario: string; case_id: string }[] }>('POST', '/v1/scenarios/run', { agent, ids });

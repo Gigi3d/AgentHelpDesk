@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // demo/scenarios-run.mjs: run the simulated x402 failures through the hosted desk with no human step.
-//   demo/live.sh scenarios [--only a,b] [--rounds 2] [--batch 4]
+//   demo/live.sh scenarios [--only a,b | --all] [--rounds 2] [--batch 4]
+// Default: the 4 featured scenarios, so one round opens 4 sandboxes. --all runs all 7.
 // Round 1 is agent "alpha": every scenario is a first sighting, so Claude drafts the fix.
 // Round 2 is agent "beta" hitting the same failures: the desk reuses the proven fix (no model call)
 // and still re-runs all three proofs. Exits 0 only if every case shipped or was answered with nobody approving.
@@ -13,7 +14,7 @@ const f = join(ROOT, 'demo/.deploy.json');
 if (!existsSync(f)) { console.error('scenarios: run demo/live.sh deploy first'); process.exit(1); }
 const { url, token } = JSON.parse(readFileSync(f, 'utf8'));
 const arg = (n, d) => { const i = process.argv.indexOf(n); return i > 0 ? process.argv[i + 1] : d; };
-const only = arg('--only', '') ? arg('--only', '').split(',') : undefined;
+const only = arg('--only', '') ? arg('--only', '').split(',') : process.argv.includes('--all') ? (await (async () => (await (await fetch(url + '/v1/scenarios', { headers: { authorization: `Bearer ${token}` } })).json()).scenarios.map((s) => s.id))()) : undefined;
 const rounds = Number(arg('--rounds', '2'));
 const batch = Number(arg('--batch', '4'));
 const h = { authorization: `Bearer ${token}`, 'content-type': 'application/json' };
@@ -31,11 +32,11 @@ let bad = 0;
 let saved = 0;
 for (let round = 1; round <= rounds; round += 1) {
   const agent = round === 1 ? 'alpha' : round === 2 ? 'beta' : `agent${round}`;
-  console.log(`\nRound ${round}: agent ${agent} reports ${only ? only.length : 'all'} x402 failures${round > 1 ? ' (the desk has seen these before)' : ''}`);
-  const ids = only ?? (await api('GET', '/v1/scenarios')).scenarios.map((s) => s.id);
+  console.log(`\nRound ${round}: agent ${agent} reports ${only ? only.length : 4} x402 failures${round > 1 ? ' (the desk has seen these before)' : ''}`);
+  const ids = only ?? undefined;
   const caseIds = [];
-  for (let i = 0; i < ids.length; i += batch) {
-    const out = await api('POST', '/v1/scenarios/run', { ids: ids.slice(i, i + batch), agent });
+  for (let i = 0; i < (ids ? ids.length : 1); i += batch) {
+    const out = await api('POST', '/v1/scenarios/run', { ids: ids ? ids.slice(i, i + batch) : undefined, agent });
     caseIds.push(...out.started.map((s) => s.case_id));
     // wait for this batch before opening more sandboxes
     for (;;) {
