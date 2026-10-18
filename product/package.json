@@ -1,0 +1,15 @@
+{
+  "name": "agenthelpdesk-product",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AgentHelpDesk backend service. Zero runtime dependencies: Node built-ins only (node:http, node:test, node:crypto). Runs as plain .ts under Node type-stripping.",
+  "scripts": {
+    "typecheck": "node ../web/node_modules/typescript/bin/tsc -p tsconfig.json --noEmit",
+    "test": "node --test --experimental-strip-types --test-concurrency=1 \"**/*.test.ts\"",
+    "start": "node --experimental-strip-types server.ts"
+  },
+  "engines": {
+    "node": ">=22.6"
+  }
+}
