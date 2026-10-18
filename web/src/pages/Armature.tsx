@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getArmature, getArmatureIssues, listCases, pullArmature, type ArmatureIssue, type ArmatureStatus, type Failure } from '../lib/api';
+import { getToken, getArmature, getArmatureIssues, listCases, pullArmature, type ArmatureIssue, type ArmatureStatus, type Failure } from '../lib/api';
 import { Button, Chip, StageChip } from '../components/ui';
 
 export default function Armature() {
@@ -49,7 +49,14 @@ export default function Armature() {
             Armature reports where people and agents struggle on an MCP server. Each open issue becomes a case.
           </p>
         </div>
-        <Button variant="primary" onClick={pull} disabled={busy}>{busy ? 'Pulling issues' : 'Pull issues and open cases'}</Button>
+        {getToken() ? (
+          <Button variant="primary" onClick={pull} disabled={busy}>{busy ? 'Pulling issues' : 'Pull issues and open cases'}</Button>
+        ) : (
+          <div className="text-right">
+            <Link to="/app/scenarios" className="inline-flex items-center rounded-ctl bg-pink px-4 py-2 text-[14px] font-medium text-white hover:bg-pink-hover">Run the full demo</Link>
+            <p className="mt-1 text-[12px] text-muted">Opening cases from issues needs the desk key.</p>
+          </div>
+        )}
       </header>
 
       {error && <p role="alert" className="mb-4 text-[14px] text-error-text">{error}</p>}
