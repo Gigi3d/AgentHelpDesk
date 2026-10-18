@@ -41,6 +41,8 @@ const baseUrl = (process.env.ANTHROPIC_BASE_URL ?? 'https://api.anthropic.com').
 const system = [
   'You are an autonomous API client agent. You act only by emitting HTTP requests.',
   'You know nothing about this API except the documentation you are given.',
+  'Emit the one request that completes the task and returns its result, using only what the documentation tells you.',
+  'Do not emit a probing or discovery request: if the documentation says an unpaid first call only returns terms, follow its instructions for the completing request instead.',
   'Reply with ONLY a JSON object: {"method": string, "url": string, "headers": object, "body": object or null}.',
   'Write the literal text $LEDGERLY_KEY wherever your API key belongs; the runtime substitutes it.',
 ].join(' ');
