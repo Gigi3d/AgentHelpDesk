@@ -22,6 +22,8 @@ test('public mode opens reads and the demo door, never other writes', () => {
   assert.equal(openWithoutToken('POST', '/v1/blaxel/delete', on), false);
   assert.equal(openWithoutToken('POST', '/v1/approvals/reply', on), false);
   assert.equal(openWithoutToken('POST', '/v1/cases', on), false);
+  assert.equal(openWithoutToken('POST', '/v1/memory/resume', on), true);
+  assert.equal(openWithoutToken('POST', '/v1/memory/resume', { AHD_PUBLIC_READ: '1' } as NodeJS.ProcessEnv), false);
   assert.equal(openWithoutToken('GET', '/v1/cases', {} as NodeJS.ProcessEnv), false);
   assert.equal(openWithoutToken('POST', '/v1/public/demo/run', { AHD_PUBLIC_READ: '1' } as NodeJS.ProcessEnv), false);
 });

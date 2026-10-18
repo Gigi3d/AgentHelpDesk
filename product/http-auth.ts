@@ -8,6 +8,8 @@ import { timingSafeEqual } from 'node:crypto';
  * (approve, delete, open a case, bill) still needs the key. */
 export function openWithoutToken(method: string | undefined, path: string, env: NodeJS.ProcessEnv = process.env): boolean {
   if (env['AHD_PUBLIC_DEMO'] === '1' && path.startsWith('/v1/public/')) return true;
+  // Waking a proven sandbox from standby only times a resume; it changes nothing and bills nothing.
+  if (env['AHD_PUBLIC_DEMO'] === '1' && method === 'POST' && path === '/v1/memory/resume') return true;
   return env['AHD_PUBLIC_READ'] === '1' && (method === 'GET' || method === 'HEAD') && !path.startsWith('/v1/public/');
 }
 
