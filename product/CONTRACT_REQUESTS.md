@@ -95,13 +95,13 @@ the orchestrator rules. Do not edit shared files directly (product/AGENTS.md).
    `requestApproval` fails loud with `409 approvals.request proofs_missing` if the case has no
    attempt yet, so nobody is asked to approve blind.
 
-8. **An email transport from `product/email/` (Primitive).** The cited Inkbox quickstart documents
+8. **An email transport.** The cited Inkbox quickstart documents
    `identity.send_text` / `sendText` only and does **not** say whether texts are SMS or iMessage, so
    the plan's "use email for the weekly report" needs a real email path.
    Local assumption: `InkboxClient.sendEmail(to, subject, body)` is the seam; `RealInkboxClient`
    refuses it with `502 channel_unavailable` (stage `approvals.inkbox.send_email`) rather than
    pretending to deliver, and `FakeInkbox` implements it so the fallback is testable. Ask: export
-   `sendEmail(to, subject, body) => Promise<{ message_id: string }>` from `email/` and the
+   a `sendEmail(to, subject, body) => Promise<{ message_id: string }>` transport and the
    orchestrator injects it via `RouteDeps.client` / `ApprovalDeps.client`.
 
 9. **ToolEvent ticket key for report events** (same question as item 5 above). A report has no case.
@@ -253,90 +253,6 @@ the orchestrator rules. Do not edit shared files directly (product/AGENTS.md).
    `POST /v1/evals/install` (and directly by tests), writes only ToolEvents, and never touches
    `Failure`/`Attempt` state, so it cannot corrupt a case.
 
-## From: email owner (product/email/, Primitive lane) — 2026-10-18
-
-1. **Bless `idempotency_key?: string` on the shared `ProblemReport`.**
-   `desk/intake.ts` already reads it (`optStr(rec, 'idempotency_key', stage, 200)`) and derives a
-   deterministic case id `c_<shortHash('case:'+key,20)>`, deduping on replay with
-   `case.duplicate_ignored`. It is not in `shared/types.ts`, so the lane that needs it most
-   (email — providers retry) has to widen the type locally.
-   Local assumption (coded in `email/threads.ts`): `interface EmailProblemReport extends
-   ProblemReport { idempotency_key?: string }`, value `email:<sha256(from|subject|body).slice(0,40)>`,
-   passed to the injected `IntakeFn` typed as `(report: ProblemReport, repo: Repository) => Promise<Failure>`.
-   Ask: add the optional field to `shared/types.ts` so the MCP, webhook and forwarded lanes get the
-   same replay safety. No email change either way (the local interface is assignable).
-
-2. **Confirm the `intake` contract the email lane is built on (no code ask).**
-   Ask: keep `export async function intake(report: ProblemReport, repo: Repository): Promise<Failure>`
-   as the only desk entry point for channels, keep the desk as the sole owner of `ack_by`,
-   `resolve_by`, `queue_position` and `klass`, and keep `vendor_hint` optional.
-   Local assumption: exactly that. `email/threads.ts` imports `intake` and nothing else from
-   `desk/`, always sends `channel: 'email'`, sends `vendor_hint` only when the subject carries a
-   `[tag]`, never sends `klass`, and copies the committed times from the returned `Failure` into
-   both the HTTP response and the reply text verbatim (never recomputed in the lane).
-
-3. **No persistence for email threads/messages.**
-   `Repository` has no thread or message store, so `GET /v1/email/threads` can only read the
-   provider (`FakePrimitive` reads `email/fixtures/threads.json`), and the thread↔case link exists
-   only inside ToolEvent payloads.
-   Ask: bless one of — (a) `Repository.createThread(t)` / `listThreads({ from? })` plus a `threads`
-   table (`thread_id, from, to, subject, sender_verified, case_id, message_count, created_at`), or
-   (b) ToolEvents as the permanent store for the lane (what evals/ asked for in item 3), with the
-   console joining on `payload.thread_id`.
-   Local assumption (coded in `email/threads.ts`): (b)-lite. `email.received` (written before any
-   send, so the case survives a delivery failure) carries `{ inbound_id, from, agent_id, vendor_id,
-   task, subject, sender_verified, channel, json_found, body_chars, idempotency_key, case_id,
-   ack_by, resolve_by, queue_position }`; the case↔thread link is written by `email.replied`
-   (`{ thread_id, message_id, sender_verified, direction, opened_here, chars, case_id, ack_by,
-   resolve_by }`) and `email.refused` (`{ code, message, thread_id, case_id, escalate_via }`). Every
-   row is `tool: 'primitive'`, so a case can be joined to its thread by reading events. Consequences
-   we accepted: the thread list is provider-only (unavailable offline in live mode), there is no
-   per-message history — only the desk's own sends and receipts — and a case whose reply was refused
-   before a thread id existed has no thread link at all.
-
-4. **`ToolEvent.ticket_id` for pre-case rows — one ruling please (same class as sandbox item 5 and
-   evals item 3).**
-   An unverified, malformed or intake-failed email has no `Failure`, but must still be auditable.
-   Local assumption: `ticket_id` = `eml_<sha256(sanitized from|subject|body).slice(0,20)>`,
-   deterministic so a provider retry lands on the same row set; once intake returns, all later rows
-   use `Failure.id`.
-   Ask: bless non-case ids in `ticket_id` (and say so for the console's ticket filter), or add an
-   optional `external_ref` to `ToolEvent` and require `ticket_id` to always be a case. Note the
-   unverified audit row deliberately stores `from`, `subject`, `body_chars` and `body_sha256` but
-   **not** the body, so a phishing attempt is provable without persisting its payload — flag if the
-   console needs the body anyway.
-
-5. **Venue ask: Primitive request-body field names are not published (no code ask).**
-   `https://docs.primitive.dev/docs/api` names the paths (`POST /send-mail`, `GET /emails`,
-   `POST /emails/{id}/reply`), the envelope `{ success, data, meta.cursor }` and the response fields
-   (`sender_verified`, `thread_id`, `message_id`, `from`, `to`, `subject`, `body`), but not the
-   request bodies. Also: the ~1,000 messages/hour figure is the Build Plan's fact-check, not the API
-   page, and the reply-only rule is not restated there either.
-   Local assumption: the request-body names are marked `ASSUMPTION` and confined to one method in
-   `email/primitive-client.ts`; the cap is enforced provider-side (HTTP 429 → `rate_limited`
-   refusal) and never re-implemented as local state; a cold-send refusal is labelled
-   `reply_only_new_account` only when the provider's own 403 body says so, else `refused`.
-   Ask: confirm with the sponsor before `PRIMITIVE_KEY` is set anywhere. The fake lane is the demo
-   default and needs none of this.
-
-6. **Optional `channel_ref` (or `thread_id`) on `ProblemReport`/`Failure`.**
-   So the resolver's tested answer, the approval outcome and the daily report can reach an
-   email-originated case **on its thread** without importing `email/` internals (and so the email
-   lane is not the only module allowed to reply).
-   Ask: add `channel_ref?: string | null` to `Failure` (set by `intake` from the report) and let the
-   desk hand it back to whichever channel module owns the prefix.
-   Local assumption: the lane does not set it. Today a desk-stage reply to an emailed agent goes
-   through `POST /v1/email/outbound { thread_id, body, case_id }`, and the caller must already know
-   the `thread_id` (from the inbound response or the `email.received` payload).
-
-7. **+1 on evals items 1 and 2 — both block this module too (no code ask).**
-   `email/*.ts` imports `shared/http.ts`, so the `HttpError` constructor-parameter-property problem
-   breaks the lane at load under Node type-stripping exactly as described; and with no resolvable
-   `@types/node`, `npm run typecheck` cannot type `process.env`, `fetch`, `AbortSignal.timeout`,
-   `node:test`, `node:crypto`, `node:fs/promises` or `node:url` for this module. `email/` declares no
-   parameter properties of its own (`EmailRefusedError` assigns in the constructor body), so no
-   email change is needed once either is fixed.
-
 ## Rulings — orchestrator, 2026-10-17
 
 Every grant below is ADDITIVE and already applied: `shared/types.ts`, `shared/http.ts`,
@@ -406,8 +322,7 @@ are now idempotent by id.
   implementation; it moves to shared/ only when a second module needs it.
 - **approvals 7** (gate contract) and **billing 10** (call order): both stand, with the changes above.
 - **approvals 8** (email transport): approvals keeps its own `InkboxClient` seam including
-  `sendEmail` and must NOT import `email/`. Primitive is the email lane's transport, Inkbox is the
-  approval channel; coupling them would let a Primitive outage break approvals. `RealInkboxClient`
+  `sendEmail`. `RealInkboxClient`
   refusing `sendEmail` with `502 channel_unavailable` is correct — the report falls back to text and
   says so.
 - **billing 4**: no separate receipt table. Idempotency stays on the outcome row
@@ -421,10 +336,6 @@ are now idempotent by id.
   `web/src/data/billing.json` disagrees (`platform_monthly: 49`) and will be corrected to match.
 - **evals 3, 5, 6**: ToolEvents are the eval store this weekend; the eval payload types stay in
   `evals/`; the per-case fresh-agent proof and the product-level install eval stay separate.
-- **email 2**: `intake` is the only channel entry point and the desk owns `ack_by`/`resolve_by`/
-  `queue_position`/`klass`. **email 3**: ToolEvents are the lane's store; no threads table.
-  **email 5**: Primitive request-body names stay marked ASSUMPTION until the sponsor confirms, and
-  the fake lane remains the demo default.
 
 ### Denied or deferred
 

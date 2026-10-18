@@ -132,11 +132,6 @@ export function runtimeReport(env: NodeJS.ProcessEnv = process.env): { all_real:
       detail: env['INKBOX_API_KEY'] ? 'Inkbox send_text (its email call is undocumented)' : 'no INKBOX_API_KEY: approval emails are not sent; use POST /v1/approvals reply',
     },
     {
-      name: 'email_intake',
-      real: Boolean(env['PRIMITIVE_KEY']) && env['AHD_EMAIL_FAKE'] !== '1',
-      detail: env['PRIMITIVE_KEY'] ? 'Primitive email lane' : 'no PRIMITIVE_KEY: the email lane uses fixtures',
-    },
-    {
       name: 'install_evals',
       real: Boolean(env['ARMATURE_KEY']) && env['AHD_EVALS_FAKE'] !== '1',
       detail: env['ARMATURE_KEY'] ? 'Armature install eval' : 'no ARMATURE_KEY: evals use the fake',

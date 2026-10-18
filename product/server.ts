@@ -18,7 +18,6 @@ import { onBillable } from './billing/meter.ts';
 import { registerRoutes as registerApprovals } from './approvals/register.ts';
 import { requestApproval } from './approvals/approvals.ts';
 import { registerRoutes as registerEvals } from './evals/register.ts';
-import { registerRoutes as registerEmail } from './email/register.ts';
 import { getRunner } from './sandbox/runner.ts';
 import { getProofRunner } from './proofs/proofs.ts';
 import { liveLoopDeps, localRunnerFromEnv, normalizeBlaxelEnv, runtimeReport, seedLiveVendor } from './live.ts';
@@ -115,7 +114,6 @@ registerDesk(router, repo, deskDeps);
 registerBilling(router, repo);
 registerApprovals(router, repo);
 registerEvals(router, repo);
-registerEmail(router, repo);
 
 // Says, from the environment as it really is, which components are real. Never returns secrets.
 router.add('GET', '/v1/runtime', async () => ({ status: 200, body: runtimeReport() }));

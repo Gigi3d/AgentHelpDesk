@@ -388,7 +388,6 @@ const stackMeta: Record<string, { role: string; metric: string; line: string }> 
   Stripe: { role: 'Meters each verified fix and bills the provider', metric: 'Verified fixes billed', line: 'Pay for proven fixes, not for tickets opened' },
   Manufact: { role: 'Hosts report_problem as an MCP server any agent can call', metric: 'MCP calls that became tickets', line: 'One endpoint any agent can use, no custom SDK' },
   Inkbox: { role: 'The desk’s identity; sends approval requests by text', metric: 'Approval texts sent', line: 'Approve a schema change from your phone' },
-  Primitive: { role: 'Agent-to-agent email threads with verified senders', metric: 'Threads answered without a human', line: 'Agents get a reply in the channel they already use' },
   Armature: { role: 'Tests whether a fresh agent installs the desk unprompted', metric: 'Fresh-agent install eval', line: 'A fresh agent installs it from the docs alone' },
 };
 
