@@ -1,0 +1,43 @@
+# Publishes the landing page and console to GitHub Pages, so the front door never goes down with the desk.
+# The pages call the live desk for data (CORS allows https://gigi3d.github.io). If the desk is asleep the
+# landing page still loads and the console shows its "desk unreachable" banner until the desk is back.
+#
+# One-time setup: repo Settings > Pages > Build and deployment > Source: GitHub Actions.
+name: pages
+on:
+  push:
+    branches: [main]
+    paths: ['web/**', '.github/workflows/pages.yml']
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency: { group: pages, cancel-in-progress: true }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Build
+        working-directory: web
+        env:
+          VITE_API_URL: ${{ vars.AHD_LIVE_URL || 'https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run' }}
+          VITE_BASE: /AgentHelpDesk/
+        run: |
+          npm ci --no-audit --no-fund || npm i --no-audit --no-fund
+          npm run build
+          cp dist/index.html dist/404.html
+      - uses: actions/upload-pages-artifact@v3
+        with: { path: web/dist }
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.d.outputs.page_url }}
+    steps:
+      - id: d
+        uses: actions/deploy-pages@v4

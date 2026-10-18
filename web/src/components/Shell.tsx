@@ -276,7 +276,7 @@ function LiveGate() {
           </>
         )}
       </p>
-      <a href="/app" className="mt-5 inline-flex h-9 items-center rounded-ctl border border-line bg-white px-4 text-[14px] font-medium text-ink hover:bg-surface">Reload the console</a>
+      <a href={`${import.meta.env.BASE_URL}app`} className="mt-5 inline-flex h-9 items-center rounded-ctl border border-line bg-white px-4 text-[14px] font-medium text-ink hover:bg-surface">Reload the console</a>
     </div>
   );
 }
