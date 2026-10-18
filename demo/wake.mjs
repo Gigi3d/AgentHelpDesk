@@ -31,6 +31,14 @@ try {
   const nodeOut = await sb.process.exec({ command: 'node -v', waitForCompletion: true, timeout: 20 });
   const [maj, min] = (/v(\d+)\.(\d+)/.exec(`${nodeOut.stdout ?? nodeOut.logs ?? ''}`) ?? []).slice(1).map(Number);
   const NODE = maj > 22 || (maj === 22 && min >= 6) ? 'node' : 'npx -y node@22';
+  // Keep the evidence: the dead process's last log lines and status, before the restart replaces them.
+  try {
+    for (const p of (await sb.process.list()).filter((x) => ['desk', 'edge'].includes(x.name) && x.status !== 'running')) console.log(`before restart: ${p.name} status=${p.status} exit=${p.exitCode ?? '-'} pid=${p.pid ?? '-'} started=${p.startedAt ?? '-'}`);
+  } catch (e) { console.log('process list failed:', e?.message ?? e); }
+  for (const name of ['desk', 'edge']) {
+    try { console.log(`--- ${name} log before restart (last 30 lines) ---\n${String(await sb.process.logs(name, 'all')).split('\n').slice(-30).join('\n').slice(-3000)}`); } catch { /* no log */ }
+  }
+  console.log(`at ${new Date().toISOString()}`);
   for (const name of ['desk', 'edge']) { try { await sb.process.kill(name); } catch { /* not running */ } }
   const keep = { waitForCompletion: false, keepAlive: true, restartOnFailure: true, maxRestarts: 20 };
   await sb.process.exec({ name: 'desk', command: `bash -lc 'cd /app && set -a && . ./ahd.env && set +a && exec ${NODE} --experimental-strip-types product/server.ts'`, workingDir: '/app', ...keep });
