@@ -1,0 +1,36 @@
+# Run the desk commands from any device: GitHub app or site > Actions > desk-control > Run workflow.
+# Needs the ENV_LIVE secret (see keep-live.yml, or run `demo/live.sh secrets` once on your Mac).
+name: desk-control
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: What to run
+        type: choice
+        options: [deploy, logs, status]
+        default: deploy
+concurrency: desk-control
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+      - name: Write keys
+        env:
+          ENV_LIVE: ${{ secrets.ENV_LIVE }}
+        run: |
+          [ -n "$ENV_LIVE" ] || { echo "ENV_LIVE secret is not set"; exit 1; }
+          umask 077; printf '%s\n' "$ENV_LIVE" > demo/.env.live
+      - name: Run
+        run: |
+          case "${{ inputs.action }}" in
+            deploy) demo/live.sh deploy ;;
+            logs)   [ -d product/node_modules/@blaxel/core ] || (cd product && npm i --no-save @blaxel/core >/dev/null)
+                    demo/live.sh logs 2>&1 | sed -E 's/(sk-[A-Za-z0-9_-]{8})[A-Za-z0-9_-]+/\1[redacted]/g' ;;
+            status) node -e "fetch(process.argv[1]+'/v1/status').then(r=>console.log('HTTP',r.status)).catch(e=>{console.log('down',e.message);process.exit(1)})" "$(grep -o 'https://[a-z0-9]*\.preview\.bl\.run' README.md | head -1)" ;;
+          esac
+      - name: Remove keys
+        if: always()
+        run: rm -f demo/.env.live demo/.deploy.json
