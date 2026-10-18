@@ -211,3 +211,13 @@ The order I would fix them in for real traffic: Postgres behind the existing Rep
 | `product/CONTRACT_REQUESTS.md` | the contract disputes between modules, and how each was ruled on |
 
 The demo vendor is Ledgerly. It is a stand-in, it is not a real company, and every address in the fixtures is on a reserved domain.
+
+## One URL, three ways in
+
+`demo/live.sh deploy` puts the desk and the web console on one Blaxel URL. Open `<url>/theater`, paste the desk key once, and watch a case move through its sandbox steps (create, replay, vendor tests, Claude draft, fresh agent, approval, ship, retry, bill) driven by the case's real events.
+
+Cases come in three ways:
+
+- An agent over MCP, A2A or email (Inkbox). `demo/live.sh inkbox` subscribes the webhook at `/v1/inkbox/webhook`.
+- The `ahd` command: `ahd run -- <cmd>` or `ahd bl <args>` runs a command, spots agent-facing errors and files a case, keeping the exit code.
+- The Armature feed: `demo/live.sh armature` pulls issues from their MCP server (needs `ARMATURE_KEY`); field mapping is unconfirmed until a real response is seen.
