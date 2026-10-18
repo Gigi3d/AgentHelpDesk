@@ -60,7 +60,7 @@ const TOKEN = env.AHD_API_TOKEN || saved.token || randomBytes(24).toString('hex'
 // 1. Package the code (no node_modules, no env files, no git history).
 const dir = mkdtempSync(join(tmpdir(), 'ahd-deploy-'));
 const tgz = join(dir, 'ahd.tgz');
-execFileSync('tar', ['-czf', tgz, '--exclude=node_modules', '--exclude=.git', '--exclude=.env*', '-C', ROOT, 'product', 'demo/sandbox-root'], { stdio: 'inherit' });
+execFileSync('tar', ['-czf', tgz, '--exclude=node_modules', '--exclude=.git', '--exclude=.env*', '--exclude=dist', '--exclude=.mcp-use', '-C', ROOT, 'product', 'demo/sandbox-root', 'mcp'], { stdio: 'inherit' });
 say(`1. Packaged code (${(readFileSync(tgz).length / 1024).toFixed(0)} KB)`);
 
 // 2. Sandbox.
@@ -133,18 +133,58 @@ const preview = await sb.previews.createIfNotExists({ metadata: { name: `${NAME}
 const url = String(preview.url).replace(/\/+$/, '');
 say(`7. Preview URL: ${url}`);
 
+// 7b. The MCP edge (what Claude's custom connector talks to), in the same sandbox on port 3000.
+//     Build runs in the background because one exec call is capped at about 60 s.
+const EDGE_PORT = 3000;
+await sb.fs.write('/app/ahd-edge.env', `AHD_DESK_URL=http://127.0.0.1:${PORT}\nAHD_DESK_TOKEN=${JSON.stringify(TOKEN)}\nPORT=${EDGE_PORT}\nHOST=0.0.0.0\n`);
+await sh('chmod 600 /app/ahd-edge.env');
+try { await sb.process.kill('edge'); } catch { /* not running */ }
+await sb.process.exec({ name: 'edge-build', command: 'cd /app/mcp && npm install --legacy-peer-deps && npm run build', workingDir: '/app/mcp', waitForCompletion: false });
+let built = false;
+for (let i = 0; i < 100 && !built; i++) {
+  await new Promise((r) => setTimeout(r, 3000));
+  const st = await sb.process.get('edge-build').catch(() => null);
+  if (st && st.status && st.status !== 'running') {
+    if (st.exitCode && st.exitCode !== 0) die(`edge build failed (exit ${st.exitCode}):\n${String(await sb.process.logs('edge-build').catch(() => '')).slice(-1500)}`);
+    built = true;
+  }
+}
+if (!built) die('edge build did not finish in 5 minutes');
+say('7b. Edge built');
+await sb.process.exec({
+  name: 'edge',
+  command: `bash -lc 'cd /app/mcp && set -a && . /app/ahd-edge.env && set +a && exec npx mcp-use start --port ${EDGE_PORT}'`,
+  workingDir: '/app/mcp',
+  waitForCompletion: false,
+  keepAlive: true,
+  restartOnFailure: true,
+  maxRestarts: 20,
+});
+const edgePreview = await sb.previews.createIfNotExists({ metadata: { name: `${NAME}-edge-preview` }, spec: { port: EDGE_PORT, public: true } });
+const edgeUrl = String(edgePreview.url).replace(/\/+$/, '');
+let edgeUp = false;
+for (let i = 0; i < 30 && !edgeUp; i++) {
+  try {
+    const r = await fetch(`${edgeUrl}/mcp`, { method: 'POST', headers: { 'content-type': 'application/json', accept: 'application/json, text/event-stream' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-03-26', capabilities: {}, clientInfo: { name: 'deploy', version: '1' } } }), signal: AbortSignal.timeout(5000) });
+    edgeUp = r.ok;
+  } catch { /* not up yet */ }
+  if (!edgeUp) await new Promise((r) => setTimeout(r, 2000));
+}
+say(edgeUp ? `7c. MCP edge is up: ${edgeUrl}/mcp` : `7c. MCP edge did not answer on ${edgeUrl}/mcp (check the 'edge' process logs in the console)`);
+
 // 8. Wait for health.
 let healthy = false;
 for (let i = 0; i < 30 && !healthy; i++) {
   try { healthy = (await fetch(`${url}/healthz`, { signal: AbortSignal.timeout(5000) })).ok; } catch { /* not up yet */ }
   if (!healthy) await new Promise((r) => setTimeout(r, 2000));
 }
-writeFileSync(TOKEN_FILE, JSON.stringify({ url, token: TOKEN, sandbox: NAME }, null, 2));
+writeFileSync(TOKEN_FILE, JSON.stringify({ url, token: TOKEN, sandbox: NAME, edge: `${edgeUrl}/mcp` }, null, 2));
 chmodSync(TOKEN_FILE, 0o600);
 say(healthy ? '8. /healthz is up' : '8. /healthz did not answer in 60s. Check the process logs: bl or the console, sandbox ' + NAME);
 say('');
 say(`Desk URL   ${url}`);
 say(`Token      saved in demo/.deploy.json (gitignored); set AHD_DESK_TOKEN to it on the MCP edge`);
+say(`Claude connector URL  ${edgeUrl}/mcp   (Settings, Connectors, Add custom connector)`);
 say(`Test       curl -s ${url}/healthz`);
 say(`Run a case demo/live.sh remote`);
-process.exit(healthy ? 0 : 1);
+process.exit(healthy && edgeUp ? 0 : 1);

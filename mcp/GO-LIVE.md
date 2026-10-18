@@ -91,3 +91,10 @@ enabled`. The desk now falls back to a clean sandbox with the `/ahd` files copie
 processes), so the fresh-agent proof still runs in isolation. Set `AHD_FORK_FALLBACK=0` to turn the
 fallback off, for example once Blaxel enables forking and you want the real fork. Ask Blaxel to enable
 snapshot/fork for the workspace if you want it.
+
+## Path C, edge included: no tunnel needed
+
+`demo/live.sh deploy` also builds and starts the MCP edge in the same sandbox (port 3000, `AHD_DESK_TOKEN`
+set for you) and prints `Claude connector URL ...`. Use that URL for Settings, Connectors, Add custom
+connector. It replaces the `mcp-use dev --tunnel` step, which Claude's connector check could not reach
+(HTTP 502 from outside, although it worked locally).
