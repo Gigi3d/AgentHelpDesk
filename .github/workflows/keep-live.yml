@@ -1,5 +1,5 @@
 # Keeps the hosted desk up. Every 5 minutes it checks the live URL; if the desk does not answer
-# twice in a row it redeploys. A redeploy reuses the sandbox and preview, so the URL stays the same.
+# twice in a row it restarts the desk in place (demo/wake.mjs), and redeploys only if that fails. The URL stays the same.
 #
 # One-time setup (repo Settings > Secrets and variables > Actions):
 #   secret   ENV_LIVE      the full contents of demo/.env.live, plus a line AHD_API_TOKEN=<your admin key>
@@ -25,7 +25,7 @@ jobs:
             code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' "$URL/v1/status" || true)
             echo "attempt $i: HTTP $code"
             case "$code" in 200|401) echo up=true >> "$GITHUB_OUTPUT"; exit 0;; esac
-            sleep 15
+            sleep 5
           done
           echo up=false >> "$GITHUB_OUTPUT"
   heal:
@@ -36,13 +36,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: '22' }
-      - name: Redeploy the desk
+      - name: Wake the desk, redeploy only if that fails
         env:
           ENV_LIVE: ${{ secrets.ENV_LIVE }}
         run: |
-          if [ -z "$ENV_LIVE" ]; then echo "Desk is down and the ENV_LIVE secret is not set, so it cannot redeploy."; exit 1; fi
+          if [ -z "$ENV_LIVE" ]; then echo "Desk is down and the ENV_LIVE secret is not set, so it cannot restart."; exit 1; fi
           umask 077; printf '%s\n' "$ENV_LIVE" > demo/.env.live
-          demo/live.sh deploy
+          [ -d product/node_modules/@blaxel/core ] || (cd product && npm i --no-save @blaxel/core >/dev/null)
+          node demo/wake.mjs "$URL" || { echo "waking in place failed, redeploying"; demo/live.sh deploy; }
       - name: Confirm it came back
         run: |
           for i in 1 2 3 4 5 6; do
