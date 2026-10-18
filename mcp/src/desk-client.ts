@@ -139,6 +139,8 @@ export interface DeskClientConfig {
   run: DeskRun;
   /** ProblemReport.vendor_hint: which vendor's desk this edge reports to. Live mode only. */
   vendorHint: string;
+  /** Optional bearer token for a desk that sets AHD_API_TOKEN. Env only; never logged. */
+  token?: string;
   /** Injected in tests; fake mode only. */
   store?: DeskStore;
 }
@@ -195,6 +197,7 @@ export function resolveConfig(env: Record<string, string | undefined> = process.
     pollMs: overrides.pollMs ?? intFromEnv(env.AHD_DESK_POLL_MS, 'AHD_DESK_POLL_MS', DEFAULT_POLL_MS, 250, 60_000),
     run: overrides.run ?? enumFromEnv(env.AHD_DESK_RUN, 'AHD_DESK_RUN', RUN_MODES, 'background'),
     vendorHint: overrides.vendorHint ?? vendorFromEnv(env.AHD_DESK_VENDOR, DEFAULT_VENDOR_HINT),
+    token: overrides.token ?? (env.AHD_DESK_TOKEN || undefined),
     store: overrides.store,
   };
 }
@@ -327,6 +330,7 @@ async function httpRequest(
     headers: {
       accept: 'application/json',
       ...(hasBody ? { 'content-type': 'application/json' } : {}),
+      ...(cfg.token ? { authorization: `Bearer ${cfg.token}` } : {}),
       ...init?.headers,
     },
     ...(hasBody ? { body: JSON.stringify(init?.body) } : {}),

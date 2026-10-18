@@ -4,6 +4,8 @@
 #   demo/live.sh server   start the desk backend with every tool that has a key switched to real
 #   demo/live.sh mcp      start the MCP edge with a public tunnel URL for Claude's custom connector
 #   demo/live.sh run      drive one Ledgerly case through the running desk
+#   demo/live.sh deploy   host the desk in a Blaxel sandbox with a public preview URL (needs token gate)
+#   demo/live.sh remote   run the case against the hosted desk (reads demo/.deploy.json)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -35,5 +37,12 @@ case "${1:-check}" in
     cd mcp && { [ -d node_modules ] || npm install --legacy-peer-deps; }
     exec npx mcp-use dev --tunnel ;;
   run)    exec node demo/run-live.mjs "${@:2}" ;;
-  *) echo "usage: demo/live.sh check|server|mcp|run"; exit 2 ;;
+  deploy)
+    [ -d product/node_modules/@blaxel/core ] || (cd product && npm i --no-save @blaxel/core)
+    exec node demo/deploy-blaxel.mjs ;;
+  remote)
+    [ -f demo/.deploy.json ] || { echo "no demo/.deploy.json: run demo/live.sh deploy first"; exit 1; }
+    URL=$(node -p "require('./demo/.deploy.json').url"); export AHD_API_TOKEN=$(node -p "require('./demo/.deploy.json').token")
+    exec node demo/run-live.mjs --base "$URL" "${@:2}" ;;
+  *) echo "usage: demo/live.sh check|server|mcp|run|deploy|remote"; exit 2 ;;
 esac

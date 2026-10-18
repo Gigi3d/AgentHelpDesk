@@ -21,6 +21,37 @@ cd mcp && npm install --legacy-peer-deps && npx mcp-use dev --tunnel      # prin
 Add it in Claude: Settings, Connectors, Add custom connector, paste the tunnel URL ending in `/mcp`.
 Then ask Claude to "report this Ledgerly failure with request id ..." and watch the case move in the console.
 
+## Path C (recommended for a stable URL): host the desk on Blaxel
+
+Runs the desk inside one Blaxel sandbox (`ahd-desk`) with a public preview URL, so nothing depends on
+your laptop or a tunnel. The desk is gated by a bearer token (`AHD_API_TOKEN`); the edge sends it as
+`AHD_DESK_TOKEN`. Run these on your own machine (the scripts need to reach Blaxel):
+
+```sh
+demo/live.sh check      # keys ok
+demo/live.sh deploy     # uploads product/, writes /app/.env (mode 600), starts the desk, creates the preview
+demo/live.sh remote     # drives one Ledgerly case against the hosted desk
+```
+
+`deploy` prints the desk URL and saves it with the generated token in `demo/.deploy.json` (gitignored).
+Then point the edge at it, either on Manufact or locally with a tunnel:
+
+```sh
+export AHD_DESK_URL=<desk url from deploy>
+export AHD_DESK_TOKEN=<token from demo/.deploy.json>
+cd mcp && npx mcp-use dev --tunnel      # or: npm run build && npm run deploy
+```
+
+Not verified against a live account when written. Check these on the first deploy:
+- The image's Node version. The script uses `npx node@22` when the image's Node is older than 22.6.
+- Whether the sandbox stays up while idle. Blaxel sandboxes suspend when idle and should resume with
+  memory and files intact; confirm in the console and keep the demo window short. Case state is still
+  in memory, so a full stop loses cases.
+- Whether the preview needs a platform token on top of ours. The script makes the preview public and
+  relies on `AHD_API_TOKEN`.
+- The desk sandbox holds your keys in `/app/.env`. Use a spend-limited Anthropic key, and delete the
+  `ahd-desk` sandbox and rotate the keys after judging.
+
 ## Path B: deploy the edge on Manufact
 
 ```sh
@@ -33,7 +64,8 @@ Manufact deployment to it. Never set `AHD_DESK_FAKE=1` on a deployment meant to 
 
 ## Before you share the URL
 
-- **No auth.** The edge and the backend authenticate nothing. Anyone with the URL can open cases, and
+- **Auth is opt-in.** Set `AHD_API_TOKEN` on the desk (`deploy` does this for you) and `AHD_DESK_TOKEN` on the
+  edge. The edge itself has no login, so anyone with the connector URL can still open cases, and
   each case spends Blaxel and Anthropic usage. Share the URL only for the demo window, use a spend-limited
   Anthropic key, and take the tunnel down after judging.
 - **Backend state is in memory.** Restarting `product/server.ts` loses every case. Do not restart mid-demo.

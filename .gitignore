@@ -52,3 +52,7 @@ YC Application*
 
 # The slide deck is a presentation, not part of the code or the docs package
 deck-source/
+
+# local deploy state and tidy-up folder
+demo/.deploy.json
+_to_delete/
