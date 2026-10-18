@@ -1,5 +1,5 @@
-# Keeps the hosted desk up. Every 10 minutes it checks the live URL; if the desk does not answer
-# three times in a row it redeploys. A redeploy reuses the sandbox and preview, so the URL stays the same.
+# Keeps the hosted desk up. Every 5 minutes it checks the live URL; if the desk does not answer
+# twice in a row it redeploys. A redeploy reuses the sandbox and preview, so the URL stays the same.
 #
 # One-time setup (repo Settings > Secrets and variables > Actions):
 #   secret   ENV_LIVE      the full contents of demo/.env.live, plus a line AHD_API_TOKEN=<your admin key>
@@ -8,7 +8,7 @@
 name: keep-live
 on:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch: {}
 concurrency: keep-live
 jobs:
@@ -21,11 +21,11 @@ jobs:
     steps:
       - id: probe
         run: |
-          for i in 1 2 3; do
+          for i in 1 2; do
             code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' "$URL/v1/status" || true)
             echo "attempt $i: HTTP $code"
             case "$code" in 200|401) echo up=true >> "$GITHUB_OUTPUT"; exit 0;; esac
-            sleep 20
+            sleep 15
           done
           echo up=false >> "$GITHUB_OUTPUT"
   heal:
@@ -43,6 +43,15 @@ jobs:
           if [ -z "$ENV_LIVE" ]; then echo "Desk is down and the ENV_LIVE secret is not set, so it cannot redeploy."; exit 1; fi
           umask 077; printf '%s\n' "$ENV_LIVE" > demo/.env.live
           demo/live.sh deploy
+      - name: Confirm it came back
+        run: |
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -s -o /dev/null -m 20 -w '%{http_code}' "${{ vars.AHD_LIVE_URL || 'https://98498c699c75fa0e1033b5ebb446c444.preview.bl.run' }}/v1/status" || true)
+            echo "after deploy: HTTP $code"
+            case "$code" in 200|401) exit 0;; esac
+            sleep 10
+          done
+          exit 1
       - name: Remove secrets
         if: always()
         run: rm -f demo/.env.live demo/.deploy.json
