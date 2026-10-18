@@ -38,7 +38,7 @@ export function Gate({ children, forceLocked }: { children?: ReactNode; forceLoc
     setToken(value.trim());
     try {
       await listCases(1);
-      window.location.assign('/app');
+      window.location.assign(`${import.meta.env.BASE_URL}app`);
     } catch (err) {
       setToken('');
       setError(err instanceof ApiError && err.status === 401 ? 'That key was not accepted.' : 'The desk could not be reached. Try again in a moment.');

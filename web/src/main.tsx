@@ -34,7 +34,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <StoreProvider>
       <ErrorBoundary>
-        <BrowserRouter>
+        <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/+$/, '') || undefined}>
           <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/unlock" element={<Gate forceLocked />} />

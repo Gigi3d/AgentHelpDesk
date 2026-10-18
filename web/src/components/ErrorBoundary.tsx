@@ -26,7 +26,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
         <pre className="mt-4 overflow-x-auto rounded-card border border-line bg-surface p-4 text-left font-mono text-[12px] text-ink">{error.message}</pre>
         <div className="mt-5 flex justify-center gap-2">
           <button type="button" onClick={() => this.setState({ error: null })} className="h-9 rounded-ctl border border-line bg-white px-4 text-[14px] font-medium text-ink hover:bg-surface">Try this page again</button>
-          <a href="/app" className="h-9 rounded-ctl bg-pink px-4 text-[14px] font-medium leading-9 text-white hover:bg-pink-hover">Back to the console</a>
+          <a href={`${import.meta.env.BASE_URL}app`} className="h-9 rounded-ctl bg-pink px-4 text-[14px] font-medium leading-9 text-white hover:bg-pink-hover">Back to the console</a>
         </div>
       </div>
     );

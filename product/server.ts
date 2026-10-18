@@ -170,7 +170,7 @@ function rateLimited(ip: string): boolean {
 // gets no CORS headers, and the browser refuses the call.
 const CORS_ORIGINS = (
   process.env.AHD_CORS_ORIGINS ??
-  'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5180,http://127.0.0.1:5180,http://localhost:5181,http://127.0.0.1:5181'
+  'http://localhost:5173,http://127.0.0.1:5173,http://localhost:5180,http://127.0.0.1:5180,http://localhost:5181,http://127.0.0.1:5181,https://gigi3d.github.io'
 )
   .split(',')
   .map((o) => o.trim())
