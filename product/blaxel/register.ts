@@ -68,7 +68,10 @@ export async function listSandboxes(): Promise<SandboxRow[]> {
   if (typeof iter === 'function') {
     for await (const item of page as AsyncIterable<unknown>) take(item);
   } else {
-    const data = (page as { data?: unknown[] }).data ?? (Array.isArray(page) ? (page as unknown[]) : []);
+    // hey-api wraps the body as { data: body }; newer API versions wrap the list again as { data: [...], meta }.
+    let body: unknown = (page as { data?: unknown }).data ?? page;
+    if (!Array.isArray(body)) body = (body as { data?: unknown }).data ?? [];
+    const data = Array.isArray(body) ? (body as unknown[]) : [];
     for (const item of data) take(item);
   }
   return rows.sort((a, b) => String(b.created_at ?? '').localeCompare(String(a.created_at ?? '')));

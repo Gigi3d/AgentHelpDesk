@@ -43,13 +43,13 @@ export default function Blaxel() {
   const [woke, setWoke] = useState<Record<string, MemoryResume | string>>({});
 
   const load = useCallback(async () => {
+    // Each piece loads on its own, so a failing Blaxel call never hides the test runs.
+    getScenarios().then((r) => setRuns(r.scenarios.flatMap((s) => s.runs))).catch(() => undefined);
+    listCases(100).then((c) => setStatus(Object.fromEntries(c.cases.map((x) => [x.id, x.status])))).catch(() => undefined);
+    getMemory().then((m) => setRemembered(new Set((m?.entries ?? []).map((e) => e.source_case)))).catch(() => undefined);
+    getBlaxelActivity().then(setAct).catch(() => undefined);
     try {
-      const [s, a, c, m] = await Promise.all([getBlaxelSandboxes(), getBlaxelActivity(), listCases(100), getMemory().catch(() => null)]);
-      setSb(s);
-      setAct(a);
-      getScenarios().then((r) => setRuns(r.scenarios.flatMap((s) => s.runs))).catch(() => undefined);
-      setStatus(Object.fromEntries(c.cases.map((x) => [x.id, x.status])));
-      setRemembered(new Set((m?.entries ?? []).map((e) => e.source_case)));
+      setSb(await getBlaxelSandboxes());
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
