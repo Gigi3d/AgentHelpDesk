@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AHD flywheel</title>
+<style>
+  :root { --bg:#0b0b10; --panel:#14141c; --line:#2a2a38; --text:#f2f2f7; --mute:#9a9ab0; --pink:#ff3d8b; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background:#000; display:flex; min-height:100vh; align-items:center; justify-content:center; font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .slide { position:relative; width:min(100vw, 177.78vh); aspect-ratio:16/9; background:var(--bg); color:var(--text); overflow:hidden; container-type:inline-size; }
+  .badge { position:absolute; top:3.2cqw; right:3.2cqw; border:1px solid var(--line); color:var(--mute); font-size:1.1cqw; letter-spacing:.18em; text-transform:uppercase; padding:.5cqw 1.2cqw; border-radius:99px; }
+  h1 { position:absolute; left:4cqw; top:4cqw; font-size:3.2cqw; line-height:1.15; max-width:38cqw; font-weight:650; letter-spacing:-.02em; }
+  h1 span { color:var(--pink); }
+  .sub { position:absolute; left:4cqw; top:15.5cqw; max-width:34cqw; font-size:1.45cqw; line-height:1.5; color:var(--mute); }
+  .metric { position:absolute; left:4cqw; bottom:4cqw; background:var(--panel); border:1px solid var(--line); border-radius:1.2cqw; padding:1.6cqw 2cqw; max-width:34cqw; }
+  .metric b { display:block; font-size:1.2cqw; letter-spacing:.14em; text-transform:uppercase; color:var(--mute); font-weight:600; margin-bottom:.6cqw; }
+  .metric div { font-size:1.55cqw; line-height:1.4; }
+  svg { position:absolute; right:1cqw; top:50%; transform:translateY(-50%); width:54cqw; height:54cqw; }
+  .node rect { fill:var(--panel); stroke:var(--line); }
+  .node text { fill:var(--text); font-size:15px; font-weight:600; }
+  .node .s { fill:var(--mute); font-size:12px; font-weight:400; }
+  .ring { fill:none; stroke:var(--line); stroke-width:2; }
+  .arrow { fill:none; stroke:var(--pink); stroke-width:3; }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="badge">Stealth</div>
+  <h1>Every reply makes the desk <span>fix more goals</span></h1>
+  <p class="sub">A ticket closes when the goal is met, not when a reply is sent. Verified outcomes feed the failure library, and the library makes the next fix faster.</p>
+  <div class="metric">
+    <b>The number we report</b>
+    <div>Goal-completion rate: goals verified met divided by goals opened, per provider.</div>
+  </div>
+
+  <svg viewBox="0 0 600 600" role="img" aria-label="Flywheel: replies, verified fixes, failure library, higher completion rate, more agents, back to replies">
+    <defs>
+      <marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#ff3d8b"/>
+      </marker>
+    </defs>
+    <circle class="ring" cx="300" cy="300" r="200"/>
+
+    <!-- arrows along the ring, clockwise from top -->
+    <path class="arrow" marker-end="url(#ah)" d="M 391 122 A 200 200 0 0 1 441 159"/>
+    <path class="arrow" marker-end="url(#ah)" d="M 498 331 A 200 200 0 0 1 478 391"/>
+    <path class="arrow" marker-end="url(#ah)" d="M 331 498 A 200 200 0 0 1 269 498"/>
+    <path class="arrow" marker-end="url(#ah)" d="M 122 391 A 200 200 0 0 1 102 331"/>
+    <path class="arrow" marker-end="url(#ah)" d="M 159 159 A 200 200 0 0 1 209 122"/>
+
+    <g class="node">
+      <rect x="205" y="62" width="190" height="58" rx="14"/>
+      <text x="300" y="87" text-anchor="middle">More replies</text>
+      <text class="s" x="300" y="106" text-anchor="middle">worked / didn't, with proof</text>
+    </g>
+    <g class="node">
+      <rect x="388" y="200" width="190" height="58" rx="14"/>
+      <text x="483" y="225" text-anchor="middle">Verified fixes</text>
+      <text class="s" x="483" y="244" text-anchor="middle">checked on the vendor side</text>
+    </g>
+    <g class="node">
+      <rect x="326" y="440" width="190" height="58" rx="14"/>
+      <text x="421" y="465" text-anchor="middle">Better failure library</text>
+      <text class="s" x="421" y="484" text-anchor="middle">memory hits, no model call</text>
+    </g>
+    <g class="node">
+      <rect x="84" y="440" width="190" height="58" rx="14"/>
+      <text x="179" y="465" text-anchor="middle">Higher completion rate</text>
+      <text class="s" x="179" y="484" text-anchor="middle">reported to each provider</text>
+    </g>
+    <g class="node">
+      <rect x="22" y="200" width="190" height="58" rx="14"/>
+      <text x="117" y="225" text-anchor="middle">More agents choose</text>
+      <text class="s" x="117" y="244" text-anchor="middle">providers with an AHD desk</text>
+    </g>
+
+    <text x="300" y="296" text-anchor="middle" fill="#f2f2f7" font-size="20" font-weight="650">Goal met,</text>
+    <text x="300" y="322" text-anchor="middle" fill="#9a9ab0" font-size="16">not ticket answered</text>
+  </svg>
+</div>
+</body>
+</html>

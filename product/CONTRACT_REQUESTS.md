@@ -382,3 +382,12 @@ are now idempotent by id.
   "vendor"` on a case that billing was about to charge an agent for on the x402 lane. It now writes
   `null` until a settlement records one, and preserves a payer a previous settlement set.
   `billing/meter.ts` still defaults a vendor-pays meter event to `'vendor'`.
+
+## Context box and goal completion (requested 2026-11-14)
+
+Proposal docs: `docs/context-box.md`, `docs/context-box.schema.json`, `docs/rewards-spec.md`. Nothing in `product/shared/` was edited.
+
+- **ProblemReport.context** (optional, additive): `{ goal, goal_source, step, attempted, result, environment, already_tried, constraints, done_when }` as in the schema. `task` stays the one-line goal so existing callers keep working. Also `requester_kind: 'agent' | 'human'`.
+- **Reply route** (`POST /v1/cases/:id/reply`): body `{ worked: boolean, proof?: unknown }`. Stored against the case, never trusted as the completion signal on its own.
+- **GoalCompletion record**: `{ id, failure_id, done_when_check, verified: boolean, verified_at, goal_source, durable_at? }`. Written only when the `done_when` check passes against the vendor side. Needs a Repository method to write and list by vendor for the goal-completion-rate report.
+- **Rewards ledger** (later, after the counter has data): operator-set pools and caps only; inbound data cannot change amounts.
