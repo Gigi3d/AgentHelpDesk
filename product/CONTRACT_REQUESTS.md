@@ -391,3 +391,12 @@ Proposal docs: `docs/context-box.md`, `docs/context-box.schema.json`, `docs/rewa
 - **Reply route** (`POST /v1/cases/:id/reply`): body `{ worked: boolean, proof?: unknown }`. Stored against the case, never trusted as the completion signal on its own.
 - **GoalCompletion record**: `{ id, failure_id, done_when_check, verified: boolean, verified_at, goal_source, durable_at? }`. Written only when the `done_when` check passes against the vendor side. Needs a Repository method to write and list by vendor for the goal-completion-rate report.
 - **Rewards ledger** (later, after the counter has data): operator-set pools and caps only; inbound data cannot change amounts.
+
+## Default desk protocol (requested 2026-11-14)
+
+Proposal doc: `docs/default-desk-protocol.md`. Nothing in `product/shared/` was edited.
+
+- **AgentReply additions** (optional, additive): `retry_request` (a request the agent replays verbatim), `signature` (`{ alg, kid, sig }` over the reply), `ask` (`{ route, question }` for the goal-completion loop).
+- **Case tokens**: single-use, expiring, scoped to the failing call. `ProblemReport.case_token?: string`, verified at intake before the report's own copy of the failure is trusted.
+- **Well-known**: a vendor-published `/.well-known/ahd.json` and a key set for reply signing. Needs a Vendor field for the signing key id.
+- **Retry allowlist**: a per-vendor list of hosts `retry_request` may target.
