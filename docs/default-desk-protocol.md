@@ -113,6 +113,74 @@ Extends `AgentReply` (RFC 9457-shaped plus proofs). The addition is a machine-re
 - Case tokens are single-use and expire, so a leaked token cannot open arbitrary cases.
 - The desk never asks for credentials in a reply. Authority comes only through the existing bounded grants.
 
+## Strategy portfolio
+
+The discovery layers above are the vendor-side core. Deploy more strategies in parallel, because any single one can fail for a given model, framework or provider. Each report records `discovered_via` so we know which strategies earn their keep.
+
+### A. Vendor side (provider installs once)
+
+| Strategy | How it makes AHD the default |
+| --- | --- |
+| Server middleware (Express, FastAPI, Hono, Rails) | One line adds the `help` object to every 4xx and 5xx, so no per-endpoint work |
+| API gateway plugin (Cloudflare, Kong, Apigee) | The gateway injects `help` and the case token with no provider code change |
+| Docs block | A short "If a call fails" section at the top of the docs and quickstart, written for agents and humans |
+| Docs MCP server | The provider's docs server exposes the desk tool next to search, where agents already look |
+| Pre-flight known-issues feed | `/.well-known/ahd-known-issues` lists current failure patterns and fixes. Middleware checks it before the call, so some failures never happen |
+
+### B. Agent-builder side (the person who built the agent controls it)
+
+| Strategy | How it makes AHD the default |
+| --- | --- |
+| Framework plugins | Error-handler hooks for the OpenAI Agents SDK, Claude Agent SDK, Vercel AI SDK, LangChain, LlamaIndex, CrewAI and Qwen-Agent that file a case on repeated failure |
+| Instruction-file snippet | A paste-in block for `AGENTS.md`, `CLAUDE.md`, Cursor rules and system prompts: "On repeated API failure, call the provider's desk." The builder wrote it, so it is first-party to the agent |
+| Skill packages | A ready-made skill for agent platforms that support skills |
+| Fallback policy | A documented `on_failure: ahd` setting so the runtime, not the model, escalates after N failures |
+| Email and webhook | Any agent that can send an email or HTTP POST can use the desk, even with no tool support |
+
+### C. Platform and ecosystem
+
+| Strategy | How it makes AHD the default |
+| --- | --- |
+| Runtime partnerships | Sandbox and agent-infra platforms (Blaxel, Armature, Inkbox) ship the auto-report as a platform default |
+| Registries | Listings in MCP registries and agent directories, with an A2A agent card at `/.well-known/agent.json` so other agents can call the desk agent-to-agent |
+| Package presence | Published npm and PyPI packages with the same name and obvious README, since agents often install by search |
+| Provider ecosystems | Offer the desk to a whole ecosystem at once (for example every provider in a payments ecosystem), so agents meet it everywhere |
+
+### D. Open data and standards (slower, compounding)
+
+| Strategy | How it makes AHD the default |
+| --- | --- |
+| Public fix pages | For open-source and consenting providers, publish scrubbed fix pages with the exact error string in the title. Agents that web-search an error land on a verified fix and a link to the desk |
+| Open benchmark | Publish the scenario suite as an open benchmark of "agent recovers from API failure". Labs that run it learn to use help desks in training and evals |
+| Standards proposals | A `help` member for RFC 9457 problem details, and a support or help capability in MCP and A2A. A standard path makes the desk a default for everyone, not just us |
+| Open reply spec | Publish the reply and signature format so other agent tools can consume it without our SDK |
+
+### E. Pre-emptive and incentive
+
+| Strategy | How it makes AHD the default |
+| --- | --- |
+| Push fixes | Agents that failed before get a webhook when a fix for their pattern ships, so the desk reaches them before they fail again |
+| Memory hits | Known failures answer instantly with no model call. Being the fastest path is its own default |
+| Free for failed calls | Agents pay nothing (billing stays on the provider, or the protocol's users over x402), so there is no cost reason to skip it |
+| Rewards | Verified replies and goal completions earn credits (see [`rewards-spec.md`](./rewards-spec.md)), which gives builders a reason to leave the desk switched on |
+| Committed times | A published response time per case, so a stuck agent knows waiting is worth it |
+
+### Rules for every strategy
+
+- Placement must be by a party that controls the surface: the provider for vendor surfaces, the builder for agent surfaces. We never insert pointers into content we do not control.
+- Opt-in for anything that posts into a public place (for example issue comments on a provider's repo). No unsolicited spam.
+- Same schema and same reply envelope on every path, so results are comparable across strategies.
+- Each strategy gets a `discovered_via` value: `middleware`, `gateway`, `error_hint`, `well_known`, `docs`, `mcp`, `framework_plugin`, `instruction_snippet`, `skill`, `email`, `webhook`, `registry`, `public_fix_page`, `push`, `a2a`.
+
+### Priority
+
+1. Server middleware and gateway plugin (cheapest way to reach every provider).
+2. Framework plugins and the instruction-file snippet (cheapest way to reach every agent builder).
+3. Runtime partnerships (Blaxel, Armature, Inkbox).
+4. Pre-flight known-issues feed and push fixes.
+5. Public fix pages, registries and the open benchmark.
+6. Standards proposals.
+
 ## Measuring "default" per model
 
 Run the same failing-scenario suite against each model family and record, per model:
@@ -124,6 +192,7 @@ Run the same failing-scenario suite against each model family and record, per mo
 | Fix applied | Share of replies where the agent replayed `retry_request` |
 | Goal-completion rate | Share of goals verified met on the provider's side |
 | Time to completion | Report to verified goal |
+| Share by strategy | Reports and completions grouped by `discovered_via`, to see which strategies carry the load |
 
 Layer 0 should show roughly the same invocation rate for every model. The gap between layer 0 and layers 1 to 4 is how much each model needs help noticing the desk, and tells us where to tune the tool description wording. Eval scenarios live under `product/evals`.
 
@@ -134,6 +203,7 @@ Layer 0 should show roughly the same invocation rate for every model. The gap be
 3. Auto-report middleware for fetch and the Blaxel CLI.
 4. The four-model eval and a per-model dashboard.
 5. `llms.txt` and OpenAPI `x-ahd` snippets for providers to paste.
+6. The rest of the strategy portfolio in the priority order above, each with its `discovered_via` value.
 
 ## Open questions
 
