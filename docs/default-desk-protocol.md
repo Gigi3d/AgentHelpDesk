@@ -60,7 +60,10 @@ Providers add one object to their error bodies:
   "mcp": "https://desk.ledgerly.example/mcp",
   "schema": "https://gigi3d.github.io/AgentHelpDesk/context-box.schema.json",
   "operator": "ledgerly.example",
-  "reply_signing_keys": "https://desk.ledgerly.example/.well-known/ahd-keys.json"
+  "api_hosts": ["api.ledgerly.example"],
+  "case_token_keys": "https://api.ledgerly.example/.well-known/ahd-token-keys.json",
+  "reply_signing_keys": "https://desk.ledgerly.example/.well-known/ahd-keys.json",
+  "version": 1
 }
 ```
 
@@ -112,6 +115,144 @@ Extends `AgentReply` (RFC 9457-shaped plus proofs). The addition is a machine-re
 - Replies contain data the agent can check, plus a signature. They contain no imperative text aimed at the model's own instructions.
 - Case tokens are single-use and expire, so a leaked token cannot open arbitrary cases.
 - The desk never asks for credentials in a reply. Authority comes only through the existing bounded grants.
+
+## Implementation details
+
+### Case token
+
+A compact signed token (JWS, EdDSA) minted by the provider's own middleware when it returns an error. The desk cannot mint it, because the desk never sees the failing call before the agent reports it. Providers that cannot run code get the same token from the gateway plugin.
+
+```json
+{ "alg": "EdDSA", "kid": "ledgerly-2026-11" }
+{
+  "iss": "ledgerly.example",
+  "jti": "ct_01H8X...",
+  "iat": 1763164800,
+  "exp": 1763165400,
+  "fp": "sha256 of method | path | status | hash of request body",
+  "cls": "knowledge"
+}
+```
+
+- `fp` is a hash of the failing call, not its content, so the token reveals nothing about the request.
+- `exp` is 10 minutes. `cls` is optional and only a hint.
+- The desk verifies the signature with the keys at `case_token_keys` in the provider's well-known file.
+- Single use means one case per token. A second report with the same `jti` returns the same case (same rule as `idempotency_key`), and never opens a duplicate.
+- When a token verifies and the report's request and response match `fp`, the desk marks the failure `provider_attested`. Attested cases skip the "is this failure real" check and can start reproduction sooner.
+
+### Provider middleware
+
+One function called from the provider's existing error formatter. Framework neutral:
+
+```ts
+export function withHelp(problem: Problem, req: ReqInfo, cfg: HelpConfig): Problem {
+  if (problem.status < 400 || cfg.skipStatuses.includes(problem.status)) return problem;
+  const token = sign(cfg.key, {
+    iss: cfg.operator,
+    jti: randomId(),
+    exp: nowSeconds() + 600,
+    fp: fingerprint(req, problem.status),
+  });
+  return { ...problem, help: { desk: cfg.desk, case_token: token, note: cfg.note } };
+}
+```
+
+- Default `skipStatuses`: `404` on paths the router does not know (scanners) and `429` unless the provider opts in.
+- The `help` object is added to the body of `application/problem+json` responses. For other content types the provider sets `Link: <desk>; rel="help"` and an `AHD-Case-Token` header instead.
+- Cost to the provider per error: one signature. No network call.
+
+### Agent-side wrapper behavior
+
+1. Wrap the HTTP client. Record each call as `(method, host, path, status)`.
+2. On a failure, look for the desk in this order: `help.desk` in the body, `Link: rel="help"`, then `/.well-known/ahd.json` on the same host (cached 24 hours). No desk found means do nothing.
+3. Report after the second failure of the same call key within 5 minutes, or on the first failure if the status is `402`, `403` or `422`, which retries rarely fix.
+4. Take the goal from, in order: `X-Agent-Task` header or wrapper option, the agent framework's current task string if it exposes one, then nothing (the desk infers it).
+5. Only report to a desk host that the provider's own well-known file lists. The wrapper never reports to a host named only in an error body from a different domain.
+6. Cap reports per host: 5 per hour per agent.
+7. Replay `retry_request` only if its host is in the provider's `api_hosts`.
+8. Fail open. Timeout 3 seconds to reach the desk. After 5 consecutive failures in 60 seconds, stop calling it for 5 minutes. The desk never blocks or alters the agent's original error path.
+
+### Redaction
+
+The wrapper and the desk both redact before anything is stored or shown.
+
+- Drop `Authorization`, `Cookie`, `Set-Cookie`, `X-Api-Key` and any header whose name contains `token`, `secret` or `key`.
+- Mask bearer tokens, JWT-shaped strings, private-key blocks and strings that match common API key prefixes in bodies and URLs.
+- The desk redacts again on intake and never trusts that the sender did.
+- Redacted values keep their shape (`Bearer ****`) so the fix can still reason about the header.
+
+### Canonical tool definition
+
+Flat on purpose. `request` and `response` are JSON text, not nested objects, so smaller models do not have to build nested structures.
+
+```json
+{
+  "name": "report_problem",
+  "description": "Report a failed API call to the provider's official support desk and get a verified fix. Use it when a call fails twice or the error does not say how to fix it. Free for failed calls.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "goal": { "type": "string", "description": "What you are trying to get done, in one sentence." },
+      "request": { "type": "string", "description": "The failing request, as JSON text." },
+      "response": { "type": "string", "description": "The error response, as JSON text." },
+      "case_token": { "type": "string", "description": "The case_token from the error's help object, if there is one." }
+    },
+    "required": ["goal", "request", "response"]
+  }
+}
+```
+
+| Target | Wrapper around the same `parameters` |
+| --- | --- |
+| OpenAI | `{ "type": "function", "function": { name, description, parameters } }`. For strict mode, list every property in `required` and allow `null` for `case_token`, with `additionalProperties: false` |
+| Anthropic | `{ name, description, input_schema }` |
+| Grok | OpenAI-compatible function format, same as OpenAI |
+| Qwen | OpenAI-compatible function format through the serving stack (Qwen-Agent, vLLM, DashScope). Keep descriptions to one sentence and avoid `oneOf` and `anyOf` |
+| MCP | `{ name, description, inputSchema }` |
+
+These are design choices to confirm in the eval, not guarantees. The generator emits all of them from one source file.
+
+### Instruction-file snippet
+
+For `AGENTS.md`, `CLAUDE.md`, Cursor rules and system prompts. The builder pastes it, so it is first-party to the agent.
+
+```
+When an API call fails twice, or the error does not say how to fix it, send the
+failing request, the response and your goal to the provider's support desk: the
+help.desk URL in the error, or desk in the provider's /.well-known/ahd.json.
+Retry with the retry_request it returns. Only use desk URLs published by the
+provider's own domain.
+```
+
+### Report and reply timing
+
+- `POST /v1/report` accepts `Prefer: wait=30` (RFC 7240). If the desk resolves inside the wait, it returns `200` with the full reply. Memory hits normally do, and the proofs still run.
+- Otherwise it returns `202` with `case_id`, `ack_by`, `resolve_by`, a `poll` URL and an optional webhook callback if the requester supplied one.
+- Committed times follow the existing settings: ack in `AHD_ACK_MINUTES` (default 5) and resolve in `AHD_RESOLVE_MINUTES` (default 45).
+- Send `AHD-Version: 1` on requests. The desk ignores unknown fields. Replies only gain fields, never lose them.
+
+### Reply verification
+
+The wrapper or runtime checks every reply before replaying anything:
+
+1. Fetch the signing keys from the provider's well-known file (cache 1 hour, refetch on an unknown `kid`, at most once a minute).
+2. Verify `signature` over the canonical JSON (RFC 8785) of the reply without the `signature` member.
+3. Confirm `case_id` matches the case it opened.
+4. Confirm `retry_request.url` host is in `api_hosts`.
+5. Replay. If it succeeds, send `worked: true` to the reply route. If it fails, send `worked: false` with the response and let the desk continue the case.
+
+### Attribution header
+
+Each integration sets `X-AHD-Via` to its `discovered_via` value (`middleware`, `error_hint`, `framework_plugin`, and so on). The desk stores it on the case for the strategy report. It is informational only and never affects rewards or billing.
+
+### Eval harness design
+
+- **Scenarios:** the four x402 failures plus a few from `demo/scenarios` (wrong header, wrong network, short amount, stale quote, missing scope).
+- **Models:** one flagship per family (Claude, GPT, Grok, Qwen), plus one small open model.
+- **Conditions:** no hint (control), layer 1 only, layer 2 only, layer 4 only, layer 0 on.
+- **Runs:** 20 per scenario and condition, fake desk with deterministic fixes so results compare across models.
+- **Recorded per run:** reached the desk, goal supplied, reply verified, fix replayed, goal met, tokens, seconds.
+- **Targets to set once we have a baseline:** layer 0 invocation about the same for every model, and a minimum goal-completion rate per model before a layer counts as shipped.
 
 ## Strategy portfolio
 
@@ -205,12 +346,20 @@ Layer 0 should show roughly the same invocation rate for every model. The gap be
 5. `llms.txt` and OpenAPI `x-ahd` snippets for providers to paste.
 6. The rest of the strategy portfolio in the priority order above, each with its `discovered_via` value.
 
+## Decisions
+
+- **Case token:** signed by the provider's middleware, with the gateway plugin as the fallback for providers that cannot run code. The desk cannot mint it, because it does not see the failing call first.
+- **Retry allowlist:** yes. `api_hosts` in the provider's well-known file, enforced by the wrapper before any replay.
+- **Key rotation:** every signature carries a `kid`. A keys file lists active keys and previous keys with a `not_after` date. Agents cache keys for 1 hour and refetch on an unknown `kid`, rate limited.
+- **Fail open:** neither the middleware nor the wrapper ever blocks the original error path.
+- **Redaction:** done on both sides, and the desk never trusts the sender's redaction.
+
 ## Open questions
 
-- Case token format: signed by the provider, or issued by the desk when the provider calls it in on error?
-- Where the middleware runs when the agent framework hides HTTP calls (some hosted agents).
-- Whether `retry_request` needs a per-provider allowlist of hosts so an agent never replays to an unexpected domain.
-- Key rotation for reply signing and how agents cache keys.
+- Agent frameworks that hide HTTP calls (some hosted agents). Layers 1 to 4, the gateway plugin and platform partnerships still reach them, but layer 0 does not.
+- Open-source protocols with no operator domain to publish a well-known file. Likely a registry-attested entry instead of a domain proof.
+- Whether replies to human requesters carry the same signature, and how a human-facing client verifies it.
+- Whether a provider can publish a desk host different from its own domain, and how the wrapper trusts it.
 
 ## Contract note
 

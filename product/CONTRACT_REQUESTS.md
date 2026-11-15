@@ -400,3 +400,12 @@ Proposal doc: `docs/default-desk-protocol.md`. Nothing in `product/shared/` was 
 - **Case tokens**: single-use, expiring, scoped to the failing call. `ProblemReport.case_token?: string`, verified at intake before the report's own copy of the failure is trusted.
 - **Well-known**: a vendor-published `/.well-known/ahd.json` and a key set for reply signing. Needs a Vendor field for the signing key id.
 - **Retry allowlist**: a per-vendor list of hosts `retry_request` may target.
+
+### Default desk protocol, implementation details (2026-11-15)
+
+Detail in `docs/default-desk-protocol.md`. Nothing in `product/shared/` was edited.
+
+- **Case token verification**: intake verifies a provider-signed JWS against the vendor's `case_token_keys`, stores the `jti` so a second report with the same token returns the same case, and sets a `provider_attested` flag when the report matches the token's `fp`.
+- **Vendor fields**: `api_hosts: string[]`, `case_token_keys_url`, `reply_signing_kid`.
+- **Report headers**: `AHD-Version`, `X-AHD-Via` (stored as `discovered_via`, informational only), and `Prefer: wait=N` on `POST /v1/report` for a synchronous reply with a `202` fallback.
+- **Redaction**: second-pass redaction at intake for auth headers, cookies, bearer and JWT-shaped strings, and key-prefixed strings.
